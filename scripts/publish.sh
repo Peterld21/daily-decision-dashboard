@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# 兼容性自检：macOS 自带 bash 3.2，对嵌套引号 + 多行 $(...) 易抽风
+# 本脚本已重写避坑；如果再加新代码，请确保不依赖 bash 4+ 语法
 # ============================================================================
 # publish.sh — 一键发布每日决策仪表盘
 #
@@ -133,13 +135,18 @@ if [[ -z "${STOCKS:-}" && $SKIP_ANALYZE -eq 0 ]]; then
 fi
 
 # --- 概览 ---------------------------------------------------------------------
+# 兼容 macOS bash 3.2：避免嵌套引号 + 括号在 $(...) 内（会触发幽灵语法错误）
+if [[ $PUSH       -eq 1 ]]; then PUSH_STR="yes";          else PUSH_STR="no (dry-run)"; fi
+if [[ $DATA_ONLY  -eq 1 ]]; then DATAONLY_STR="yes";      else DATAONLY_STR="no";       fi
+STOCKS_STR="${STOCKS:-[skipped]}"
+
 step "Plan"
 printf "  ${CYAN}WEBAPP_ROOT${RESET}  %s\n" "$WEBAPP_ROOT"
 printf "  ${CYAN}DSA_DIR    ${RESET}  %s\n" "$DSA_DIR"
 printf "  ${CYAN}PYTHON_BIN ${RESET}  %s\n" "$PYTHON_BIN"
-printf "  ${CYAN}STOCKS     ${RESET}  %s\n" "${STOCKS:-(skipped)}"
-printf "  ${CYAN}PUSH       ${RESET}  %s\n" "$([[ $PUSH -eq 1 ]] && echo yes || echo "no (dry-run)")"
-printf "  ${CYAN}DATA_ONLY  ${RESET}  %s\n" "$([[ $DATA_ONLY -eq 1 ]] && echo yes || echo no)"
+printf "  ${CYAN}STOCKS     ${RESET}  %s\n" "$STOCKS_STR"
+printf "  ${CYAN}PUSH       ${RESET}  %s\n" "$PUSH_STR"
+printf "  ${CYAN}DATA_ONLY  ${RESET}  %s\n" "$DATAONLY_STR"
 [[ -n "$FORCE_DATE" ]] && printf "  ${CYAN}FORCE_DATE ${RESET}  %s\n" "$FORCE_DATE"
 
 # === 1) 行情 API + 新闻 + LLM 主分析 ==========================================
@@ -160,9 +167,8 @@ REPORTS_DIR="${DSA_DIR}/reports"
 if [[ -n "$FORCE_DATE" ]]; then
   REPORT_DATE="$FORCE_DATE"
 else
-  REPORT_DATE="$(/bin/ls -1 "$REPORTS_DIR"/report_*.md 2>/dev/null \
-                 | sed -E 's#.*/report_([0-9]{8})\.md$#\1#' \
-                 | sort -u | tail -n1)"
+  # 兼容 bash 3.2：单行命令替换 + 无正则捕获括号
+  REPORT_DATE=$(ls -1 "$REPORTS_DIR"/report_*.md 2>/dev/null | sed 's#.*/report_##; s#\.md$##' | sort -u | tail -n1)
 fi
 if [[ -z "${REPORT_DATE:-}" ]]; then
   err "无法定位 report_YYYYMMDD.md；--date 强制指定或先跑 main.py"
@@ -235,12 +241,14 @@ if ! git diff --quiet -- data || ! git diff --cached --quiet -- data; then
   CHANGED_FILES="$(git status --porcelain -- data | wc -l | tr -d ' ')"
   log "data/ 有 ${CHANGED_FILES} 个文件变更"
   git add data/
-  COMMIT_MSG="data: ${REPORT_DATE} refresh ($(date +'%Y-%m-%d %H:%M'))"
-  AUTHOR_ARGS=()
+  COMMIT_TS=$(date +'%Y-%m-%d %H:%M')
+  COMMIT_MSG="data: ${REPORT_DATE} refresh [${COMMIT_TS}]"
   if [[ -n "${GIT_AUTHOR_NAME:-}" && -n "${GIT_AUTHOR_EMAIL:-}" ]]; then
-    AUTHOR_ARGS=( --author="${GIT_AUTHOR_NAME} <${GIT_AUTHOR_EMAIL}>" )
+    git -c user.name="$GIT_AUTHOR_NAME" -c user.email="$GIT_AUTHOR_EMAIL" \
+        commit -m "$COMMIT_MSG"
+  else
+    git commit -m "$COMMIT_MSG"
   fi
-  git "${AUTHOR_ARGS[@]+"${AUTHOR_ARGS[@]}"}" commit -m "$COMMIT_MSG"
   ok "本地 commit 完成：$COMMIT_MSG"
 
   if [[ $PUSH -eq 1 ]]; then
