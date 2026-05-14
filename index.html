@@ -9,7 +9,17 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>决策仪表盘</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-  <link rel="stylesheet" href="css/main.css?v=20260514b" />
+  <link rel="stylesheet" href="css/main.css?v=20260514c" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="决策仪表盘" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
 </head>
@@ -88,6 +98,7 @@
     </p>
   </div>
 
-  <script type="module" src="js/app.js?v=20260514"></script>
+  <script type="module" src="js/app.js?v=20260514c"></script>
+  <script type="module" src="js/pwa.js?v=20260514c"></script>
 </body>
 </html>
