@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>决策仪表盘</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="css/main.css?v=20260514" />
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <!-- 顶部：宏观图 + 信息总览（两栏） -->
+    <section class="intro">
+      <div class="intro-hero-row">
+        <div class="intro-hero-left">
+          <div class="macro-hero" role="img" aria-label="QQQ、SCHD 与恐贪指数">
+            <div class="macro-chart" id="macro-qqq-schd-fg"></div>
+          </div>
+        </div>
+        <div class="intro-hero-right">
+          <aside class="intro-news-digest" aria-label="重要信息利好多空总览">
+            <h3 class="news-digest-h">重要信息总览</h3>
+            <p class="news-digest-sub">
+              来自当日 <code>report_*.md</code> 中 <code>### 📰 重要信息速览</code> 解析，
+              <strong>按代码分组、去重</strong>，不重复请求网络。
+            </p>
+            <div class="news-digest-cols" id="intel-digest-cols"></div>
+          </aside>
+        </div>
+      </div>
+
+      <h1 id="doc-title">决策仪表盘</h1>
+      <blockquote id="doc-subtitle"></blockquote>
+    </section>
+
+    <!-- 摘要表 -->
+    <section class="summary-section">
+      <h2 class="summary-heading">📊 分析结果摘要</h2>
+      <p class="summary-hint">排序：先卖出/减仓 → 买入 → 持有/观望；组内按评分从高到低。</p>
+      <div class="summary-table-wrap">
+        <table class="summary-table" id="summary-table">
+          <thead>
+            <tr>
+              <th class="col-i"></th>
+              <th>标的</th>
+              <th>建议</th>
+              <th class="num">评分</th>
+              <th class="num">现价</th>
+              <th class="num">MA5</th>
+              <th class="num">MA10</th>
+              <th class="num">MA20</th>
+              <th>乖离(MA5)</th>
+              <th class="num">支撑</th>
+              <th class="num">压力</th>
+              <th class="num ret-th">近5日</th>
+              <th class="num ret-th">近20日</th>
+              <th class="num">市值</th>
+              <th class="num">Forward PE</th>
+              <th class="action-h ta-sum-th">交易动作总结</th>
+            </tr>
+          </thead>
+          <tbody id="summary-tbody"></tbody>
+        </table>
+      </div>
+      <p class="cross-def">
+        <strong>金叉 / 死叉</strong>：MA5 上穿/下穿 MA20。
+        <strong>量价菱形</strong>：相对 5 日均量放量(&gt;1.2×) / 缩量(&lt;0.8×) + 涨跌。
+        <strong>交易动作总结</strong> 来自 <code>trade_action_YYYYMMDD.md</code>，非投资建议。
+      </p>
+    </section>
+
+    <!-- TOC -->
+    <nav class="toc" aria-label="个股目录">
+      <div class="toc-inner" id="toc-inner"></div>
+    </nav>
+
+    <!-- 个股卡片网格 -->
+    <main class="stocks-grid" id="stocks-grid"></main>
+
+    <p class="footer-note" id="footer-note">
+      来源：本地 <code>report_to_json.py</code> 产出 · 浏览器零外部 API 调用 · K 线仅供复盘参考
+    </p>
+  </div>
+
+  <script type="module" src="js/app.js?v=20260514"></script>
+</body>
+</html>

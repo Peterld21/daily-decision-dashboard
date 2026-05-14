@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+._*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Logs / scratch
+*.log
+.cache/
+
+# Node (not used now, defensive)
+node_modules/
+dist/
+.parcel-cache/
+
+# Local serving
+.python-http-server.pid
