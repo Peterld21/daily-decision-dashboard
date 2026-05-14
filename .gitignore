@@ -10,6 +10,7 @@
 # Logs / scratch
 *.log
 .cache/
+logs/
 
 # Node (not used now, defensive)
 node_modules/

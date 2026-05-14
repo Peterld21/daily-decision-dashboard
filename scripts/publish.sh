@@ -43,6 +43,31 @@ step() { printf "\n${BOLD}${BLUE}── %s ──${RESET}\n" "$*"; }
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 WEBAPP_ROOT="$(cd -- "${SCRIPT_DIR}/.." &>/dev/null && pwd)"
 WEBAPP_DATA="${WEBAPP_ROOT}/data"
+LOG_DIR="${WEBAPP_ROOT}/logs"
+mkdir -p "$LOG_DIR"
+LOG_FILE="${LOG_DIR}/publish_$(date +%Y%m%d_%H%M%S).log"
+
+# Python 输出不要被块缓冲（关键：这样你能实时看到进度）
+export PYTHONUNBUFFERED=1
+export PYTHONIOENCODING=UTF-8
+
+# 子步骤执行包装：
+#   - 实时把 stdout/stderr 同步到屏幕 & 日志
+#   - pipefail + PIPESTATUS 捕获真实退出码
+#   - 描述行打到屏幕
+run_step() {
+  local label="$1"; shift
+  printf "${DIM}[%s]${RESET} ${CYAN}\$${RESET} %s\n" "$(ts)" "$*" | tee -a "$LOG_FILE" >&2
+  set +e
+  "$@" 2>&1 | tee -a "$LOG_FILE"
+  local rc=${PIPESTATUS[0]}
+  set -e
+  if [[ $rc -ne 0 ]]; then
+    err "$label 失败 (exit=$rc)，详见 $LOG_FILE"
+    return $rc
+  fi
+  return 0
+}
 
 # --- 默认参数 -----------------------------------------------------------------
 PUSH=0
@@ -121,9 +146,8 @@ printf "  ${CYAN}DATA_ONLY  ${RESET}  %s\n" "$([[ $DATA_ONLY -eq 1 ]] && echo ye
 if [[ $SKIP_ANALYZE -eq 0 ]]; then
   step "1/4  main.py  (行情 API + 新闻 + LLM 综合分析)"
   pushd "$DSA_DIR" >/dev/null
-  "$PYTHON_BIN" main.py --stocks "$STOCKS" --no-notify 2>&1 | tail -n 8 || {
-    err "main.py 失败"; popd >/dev/null; exit 3
-  }
+  run_step "main.py" "$PYTHON_BIN" -u main.py --stocks "$STOCKS" --no-notify \
+    || { popd >/dev/null; exit 3; }
   popd >/dev/null
   ok "main.py 完成"
 else
@@ -153,9 +177,9 @@ TA_MD="${REPORTS_DIR}/trade_action_${REPORT_DATE}.md"
 if [[ $SKIP_TRADE_ACTION -eq 0 ]]; then
   step "2/4  generate_trade_action_report.py  (规则引擎 + DeepSeek 总结)"
   pushd "$DSA_DIR" >/dev/null
-  "$PYTHON_BIN" scripts/generate_trade_action_report.py "$REPORT_MD" 2>&1 | tail -n 4 || {
-    err "generate_trade_action_report.py 失败"; popd >/dev/null; exit 3
-  }
+  run_step "generate_trade_action_report" \
+    "$PYTHON_BIN" -u scripts/generate_trade_action_report.py "$REPORT_MD" \
+    || { popd >/dev/null; exit 3; }
   popd >/dev/null
   [[ -f "$TA_MD" ]] && ok "trade_action_${REPORT_DATE}.md 已生成" \
                     || warn "未发现 $TA_MD"
@@ -168,8 +192,9 @@ FUND_CSV="${REPORTS_DIR}/watchlist_fundamentals_${REPORT_DATE}.csv"
 if [[ $RUN_FUNDAMENTALS -eq 1 ]]; then
   step "3/4  fetch_watchlist_fundamentals_xueqiu.py  (雪球：市值 / Forward PE)"
   pushd "$DSA_DIR" >/dev/null
-  if "$PYTHON_BIN" scripts/fetch_watchlist_fundamentals_xueqiu.py \
-        --date "$REPORT_DATE" --report "$REPORT_MD" 2>&1 | tail -n 4; then
+  if run_step "fetch_watchlist_fundamentals_xueqiu" \
+       "$PYTHON_BIN" -u scripts/fetch_watchlist_fundamentals_xueqiu.py \
+       --date "$REPORT_DATE" --report "$REPORT_MD"; then
     ok "watchlist_fundamentals_${REPORT_DATE}.csv 已生成"
   else
     warn "雪球基本面拉取失败；摘要表 市值/PE 列会显示「—」"
@@ -188,9 +213,9 @@ JSON_ARGS=(
 )
 [[ $USE_TA_SUMMARY_LLM -eq 0 ]] && JSON_ARGS+=( --no-ta-summary-llm )
 pushd "$DSA_DIR" >/dev/null
-"$PYTHON_BIN" scripts/report_to_json.py "${JSON_ARGS[@]}" 2>&1 | tail -n 8 || {
-  err "report_to_json.py 失败"; popd >/dev/null; exit 3
-}
+run_step "report_to_json" \
+  "$PYTHON_BIN" -u scripts/report_to_json.py "${JSON_ARGS[@]}" \
+  || { popd >/dev/null; exit 3; }
 popd >/dev/null
 ok "JSON 已落地：$WEBAPP_DATA"
 
@@ -219,7 +244,7 @@ if ! git diff --quiet -- data || ! git diff --cached --quiet -- data; then
   ok "本地 commit 完成：$COMMIT_MSG"
 
   if [[ $PUSH -eq 1 ]]; then
-    if git push 2>&1 | tail -n 4; then
+    if run_step "git push" git push; then
       ok "已 push 到 origin/$(git rev-parse --abbrev-ref HEAD)"
       printf "\n${GREEN}🎉  Cloudflare Pages 将在 30~60s 内重建。${RESET}\n"
       printf "    访问：${CYAN}%s${RESET}\n" "https://daily-decision-dashboard.peterinnyc.workers.dev/"
@@ -234,4 +259,4 @@ else
   ok "data/ 无变化，无需 commit"
 fi
 
-printf "\n${GREEN}${BOLD}publish.sh done.${RESET}\n"
+printf "\n${GREEN}${BOLD}publish.sh done.${RESET}  log → %s\n" "$LOG_FILE"
