@@ -9,10 +9,26 @@
  */
 
 /** ECharts 实例的容器自适应高度。 */
+const __ECHARTS_INSTANCES = new Set();
+
 export function disposeOnExit(chart, el) {
   if (!chart || !el) return;
+  __ECHARTS_INSTANCES.add(chart);
   const ro = new ResizeObserver(() => chart.resize());
   ro.observe(el);
+}
+
+// 屏幕旋转 / 软键盘 / 浏览器 UI 隐显都会触发 visualViewport 变化 —— iOS Safari 必备兜底
+if (typeof window !== 'undefined') {
+  const fireResize = () => {
+    for (const c of __ECHARTS_INSTANCES) {
+      try { c.resize(); } catch (_) { /* disposed */ }
+    }
+  };
+  window.addEventListener('orientationchange', () => setTimeout(fireResize, 80));
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', fireResize, { passive: true });
+  }
 }
 
 /** K 线 option 工厂。 */

@@ -181,3 +181,31 @@ python3 -m http.server 8000
 ```
 
 > 用 `http.server` 而非 `file://` 直接打开，避免 ES Modules / `fetch` 的 CORS 限制。
+
+---
+
+## 六、移动端访问
+
+### 6.1 推荐顺序
+
+1. **首选** Cloudflare Pages 的 `*.pages.dev` 主域，或自己的自定义域。
+2. **备用** GitHub Pages（已配置 `.github/workflows/pages.yml` 自动镜像）：
+   `https://<user>.github.io/<repo>/`
+3. `*.workers.dev` 在部分移动运营商 / 公共 Wi-Fi 上会被 DNS 屏蔽，**不建议**作为主入口。
+
+### 6.2 已做的移动适配
+
+- `<meta viewport>` 包含 `viewport-fit=cover`，适配 iPhone 刘海屏。
+- 安全区内边距 `env(safe-area-inset-*)` 避免 Home Bar 遮挡。
+- 摘要表横向滚动 + 首列 sticky（滚到右侧仍能看到代码）。
+- TOC 在手机端变成横向 scroll-snap 条，不再占整屏宽度。
+- 个股卡片单列；K 线 220px、benchmark 170px；超小屏（< 380px）再减小。
+- 取消 `.card-body` 的 `max-height: 42vh`（嵌套滚动在 iOS Safari 体验差）。
+- ECharts 监听 `orientationchange` + `visualViewport.resize`，旋转屏幕后图表自动重绘。
+- `navigator.onLine` 判断离线给出明确提示。
+
+### 6.3 故障排查
+
+- 手机能打开 Google / 其他网站，但本站打不开 → 八成是运营商屏蔽了 `*.workers.dev`，换 `*.pages.dev` 或 GitHub Pages 地址。
+- 页面打开但卡片空 → 应该已经看到红色横幅提示；检查 `data/manifest.json` 是否成功上传。
+- 图表显示但拖动卡顿 → ECharts dataZoom 默认开启了手机触控；如仍卡，可在 `chart-helpers.js` 中临时把 `animation: false`。

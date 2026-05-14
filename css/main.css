@@ -31,6 +31,28 @@ body {
   color: var(--text);
   line-height: 1.5;
   font-size: 13px;
+  /* iOS：禁止旋转时自动放大字体；保持手动 pinch-zoom */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* iPhone 刘海屏安全区 */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* 摘要表横滚里给「标的」列一个 sticky，让滚到右侧仍能看到行标 */
+.summary-table-wrap {
+  position: relative;
+}
+.summary-table .col-name-sticky {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #ffffff;
+  box-shadow: 1px 0 0 var(--border);
+}
+.summary-table thead .col-name-sticky {
+  background: #eceff1;
+  z-index: 3;
 }
 
 a { color: #1565c0; text-decoration: none; }
@@ -447,4 +469,99 @@ a:hover { text-decoration: underline; }
   color: var(--muted);
   font-size: 0.78rem;
   margin-top: 1.25rem;
+}
+
+/* =====================================================================
+ * 📱 Mobile（< 600px）：iPhone / 安卓手机优化
+ *   - 紧凑内边距、缩小图表、去掉嵌套滚动
+ *   - 摘要表强制横向滚动 + 首列吸附
+ *   - TOC 变成横向 scroll-snap 条
+ * ===================================================================== */
+@media (max-width: 600px) {
+  body { font-size: 13.5px; }
+  .wrap { padding: 0.45rem 0.45rem 1.4rem; }
+
+  .intro { padding: 0.7rem 0.7rem 0.55rem; }
+  .intro h1 { font-size: 1.1rem; margin-bottom: 0.35rem; }
+  .intro blockquote { font-size: 0.82rem; padding: 0.45rem 0.6rem; }
+
+  /* 宏观图：260 → 220，节省竖屏首屏 */
+  .macro-chart { height: 220px; }
+
+  /* 重要信息总览：单列、字号、内距收紧 */
+  .news-digest-h { font-size: 0.92rem; }
+  .news-digest-sub { font-size: 0.7rem; }
+  .news-digest-cols { gap: 0.4rem; }
+
+  /* 摘要表：横滚 + 首列 sticky；字体保留可读 */
+  .summary-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    /* 视觉提示「可横滑」 */
+    background:
+      linear-gradient(to right, #fff 30%, rgba(255,255,255,0)) left center / 32px 100% no-repeat,
+      linear-gradient(to left,  #fff 30%, rgba(255,255,255,0)) right center / 32px 100% no-repeat,
+      linear-gradient(to right, rgba(0,0,0,0.08), rgba(0,0,0,0)) left center / 8px 100% no-repeat,
+      linear-gradient(to left,  rgba(0,0,0,0.08), rgba(0,0,0,0)) right center / 8px 100% no-repeat;
+    background-attachment: local, local, scroll, scroll;
+  }
+  .summary-table { font-size: 0.74rem; }
+  .summary-table th, .summary-table td { padding: 0.3rem 0.35rem; }
+  .summary-table .name { min-width: 7.5rem; }
+  .summary-table th.action-h, .summary-table td.action-h {
+    min-width: 9rem; max-width: 12rem; font-size: 0.74rem;
+  }
+
+  /* TOC：横向 scroll-snap，避免占用整屏 */
+  .toc { padding: 0.25rem 0; margin-bottom: 0.35rem; }
+  .toc-inner {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.1rem 0.2rem 0.25rem;
+  }
+  .toc-inner::-webkit-scrollbar { display: none; }
+  .toc a {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    padding: 0.35rem 0.7rem;     /* 增大触控热区到 ≥36px */
+    font-size: 0.8rem;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* 卡片：一列；图表更扁；正文不要嵌套滚动 */
+  .stocks-grid { grid-template-columns: 1fr; gap: 8px; }
+  .stock-card { border-radius: 12px; }
+  .chart-box { height: 220px; }
+  .benchmark-chart { height: 170px; }
+  .card-body {
+    max-height: none;        /* 关键：去掉嵌套滚动，让外层滚动接管 */
+    overflow-y: visible;
+    padding: 0.5rem 0.6rem 0.7rem;
+  }
+  .card-head { padding: 0.55rem 0.6rem; }
+  .card-title { font-size: 0.95rem; }
+  .card-emoji { font-size: 1.2rem; }
+  .card-body table { font-size: 0.78rem; }
+  .card-body p, .card-body ul { font-size: 0.8rem; }
+  .card-body h3 { font-size: 0.88rem; }
+  .card-body .intel-qv h3 { font-size: 0.92rem; }
+  .card-body .intel-qv p, .card-body .intel-qv ul { font-size: 0.82rem; }
+
+  /* footer：底部安全区，避免 iPhone Home Bar 遮挡 */
+  .footer-note {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* 超小屏（< 380px，老 iPhone SE 之类） */
+@media (max-width: 380px) {
+  .summary-table { font-size: 0.7rem; }
+  .summary-table th, .summary-table td { padding: 0.22rem 0.28rem; }
+  .macro-chart { height: 200px; }
+  .chart-box { height: 200px; }
+  .benchmark-chart { height: 150px; }
 }

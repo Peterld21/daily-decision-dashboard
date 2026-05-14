@@ -26,7 +26,7 @@ export function renderSummaryTable(rows) {
   for (const r of rows || []) {
     const tr = h('tr', { 'data-ticker': r.ticker }, [
       h('td', { class: 'num', text: r.emoji || '' }),
-      h('td', { class: 'name', title: `${r.name || ''} (${r.ticker})` }, [
+      h('td', { class: 'name col-name-sticky', title: `${r.name || ''} (${r.ticker})` }, [
         h('a', { href: `#stock-${slug(r.ticker)}` }, [
           h('span', { class: 'tk', text: r.ticker }),
           ' ',

@@ -27,7 +27,11 @@ async function bootstrap() {
   // 1) manifest
   STORE.manifest = await fetchJSON(`${DATA_BASE}/manifest.json`);
   if (!STORE.manifest || !STORE.manifest.latest) {
-    showFatal('manifest.json 缺失或格式错误，请先在本地跑 report_to_json.py 产出数据。');
+    showFatal(
+      navigator.onLine
+        ? 'manifest.json 缺失或格式错误。可能是本地未跑 report_to_json.py 产出数据。'
+        : '网络似乎离线，请检查移动数据/Wi-Fi 后刷新。'
+    );
     return;
   }
   STORE.reportDate = STORE.manifest.latest;
@@ -35,7 +39,7 @@ async function bootstrap() {
   // 2) 当日 index.json
   STORE.index = await fetchJSON(`${DATA_BASE}/reports/${STORE.reportDate}/index.json`);
   if (!STORE.index) {
-    showFatal(`无法加载 reports/${STORE.reportDate}/index.json`);
+    showFatal(`无法加载 reports/${STORE.reportDate}/index.json — 请检查网络后下拉刷新。`);
     return;
   }
 
