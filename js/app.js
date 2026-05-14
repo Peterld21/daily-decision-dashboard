@@ -8,7 +8,7 @@
  * 浏览器**绝不**请求外部 API；所有数据均同源 data/*.json。
  */
 
-import { fetchJSON } from './utils.js';
+import { fetchJSON, renderMarkdown } from './utils.js';
 import { renderMacroHero } from './macro-hero.js';
 import { renderIntelDigest } from './intel-digest.js';
 import { renderSummaryTable, renderTOC } from './summary-table.js';
@@ -46,7 +46,7 @@ async function bootstrap() {
   // 3) 渲染首屏
   document.title = STORE.index.title || '决策仪表盘';
   document.getElementById('doc-title').textContent = STORE.index.title || '决策仪表盘';
-  document.getElementById('doc-subtitle').innerHTML = `<p>${STORE.index.subtitle || ''}</p>`;
+  document.getElementById('doc-subtitle').innerHTML = renderMarkdown(STORE.index.subtitle || '');
   document.getElementById('footer-note').innerHTML =
     `来源：本地 <code>report_to_json.py</code> 产出 · 报告日期 <strong>${STORE.index.date}</strong> · 浏览器零外部 API 调用`;
 

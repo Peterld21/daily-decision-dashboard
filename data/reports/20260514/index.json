@@ -1,7 +1,8 @@
 {
   "date": "2026-05-14",
   "title": "🎯 2026-05-14 决策仪表盘",
-  "subtitle": "共分析 **27** 只股票 | 🟢买入:7 🟡观望:17 🔴卖出:3",
+  "subtitle": "共分析 **24** 只 ｜ 🟢买入 6　🟡持有 12　⚪观望 6　🔴卖出 0",
+  "subtitle_original": "共分析 **27** 只股票 | 🟢买入:7 🟡观望:17 🔴卖出:3",
   "counts": {
     "buy": 6,
     "hold": 12,
@@ -544,8 +545,8 @@
       "resistance": 230.0,
       "ret5_pct": 8.660924717997265,
       "ret20_pct": 13.556598469256542,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "5.47T",
+      "pe_forward_display": "19.9",
       "ta_summary": "强多头趋势，MACD零上强势但柱值偏小，KDJ超买，量价中性，赔率较高，建议观察。"
     },
     {
@@ -564,8 +565,8 @@
       "resistance": 459.5,
       "ret5_pct": 5.72153694047004,
       "ret20_pct": 72.59414552434858,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "726.43B",
+      "pe_forward_display": "34.5",
       "ta_summary": "强多头趋势，MACD零上多头但柱值缩小，KDJ超买，量价缩量上攻，赔率中性，建议多头观察回踩。"
     },
     {
@@ -604,8 +605,8 @@
       "resistance": 86.03,
       "ret5_pct": -2.2058802260453536,
       "ret20_pct": 6.813904051726327,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "144.71B",
+      "pe_forward_display": "29.8",
       "ta_summary": "强多头趋势，均线多头排列，MACD零上多头，KDJ中性，量价偏弱，赔率偏低，建议持有观察。"
     },
     {
@@ -624,8 +625,8 @@
       "resistance": 100.0,
       "ret5_pct": 3.888025028347508,
       "ret20_pct": 3.53148981218665,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "57.28B",
+      "pe_forward_display": "18.0",
       "ta_summary": "强多头趋势，MACD零上强势且柱线放大，KDJ中性偏强，量价配合上攻，赔率较高，建议买入。"
     },
     {
@@ -644,8 +645,8 @@
       "resistance": 300.92,
       "ret5_pct": 4.046935252605688,
       "ret20_pct": 12.279156217447106,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "4.39T",
+      "pe_forward_display": "31.2",
       "ta_summary": "强多头趋势，MACD零上强势但KDJ超买，量价中性，赔率偏低，建议观察。"
     },
     {
@@ -664,8 +665,8 @@
       "resistance": 1062.1,
       "ret5_pct": 9.116995292637542,
       "ret20_pct": 25.043383321309154,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "80.16B",
+      "pe_forward_display": "57.2",
       "ta_summary": "强多头趋势，MACD零上强势但柱体缩短，KDJ中性偏强，量价缩量上攻，赔率中性，建议持有。"
     },
     {
@@ -684,8 +685,8 @@
       "resistance": 400.0,
       "ret5_pct": 0.9869903709838868,
       "ret20_pct": 19.305171491780992,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "4.83T",
+      "pe_forward_display": "27.6",
       "ta_summary": "均线强多头排列，MACD零上多头但柱值偏弱，KDJ超买，量能中性，赔率偏低，建议持有观察回踩。"
     },
     {
@@ -704,8 +705,8 @@
       "resistance": 453.4,
       "ret5_pct": 11.672052954383606,
       "ret20_pct": 13.603769650726939,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "1.67T",
+      "pe_forward_display": "177.1",
       "ta_summary": "强多头趋势，均线多头排列，MACD零上强势但KDJ超买，量价配合上攻，赔率空间有限，建议持有。"
     },
     {
@@ -744,8 +745,8 @@
       "resistance": 125.0,
       "ret5_pct": 6.44190659382613,
       "ret20_pct": 85.23251677432877,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "604.58B",
+      "pe_forward_display": "78.4",
       "ta_summary": "弱多头趋势，MACD零上多头但柱值缩小，KDJ高位回落，量能萎缩，赔率中性，建议轻仓试探并防范超买回调。"
     },
     {
@@ -764,8 +765,8 @@
       "resistance": 1513.57,
       "ret5_pct": 2.641881481722619,
       "ret20_pct": 62.29646391429397,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "214.32B",
+      "pe_forward_display": "8.6",
       "ta_summary": "弱多头趋势，MACD零上多头但KDJ超买，量价中性偏弱，赔率略高，建议买入。"
     },
     {
@@ -784,8 +785,8 @@
       "resistance": 270.78,
       "ret5_pct": -1.7673317299369051,
       "ret20_pct": 8.704227317027158,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "2.91T",
+      "pe_forward_display": "27.4",
       "ta_summary": "趋势震荡偏多，MACD零轴上修正但柱值转负，KDJ中性，量能中性，赔率偏低，短期上行空间有限，建议持有。"
     },
     {
@@ -804,8 +805,8 @@
       "resistance": 191.57,
       "ret5_pct": -2.200692830657558,
       "ret20_pct": 11.748423081720105,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "545.76B",
+      "pe_forward_display": "23.6",
       "ta_summary": "弱多头震荡格局，MACD零上多头但柱值偏弱，KDJ中性，量价缩量上攻，赔率偏低需谨慎，建议持有。"
     },
     {
@@ -824,8 +825,8 @@
       "resistance": 14.83,
       "ret5_pct": 11.523885565730252,
       "ret20_pct": 47.24725100269453,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "82.12B",
+      "pe_forward_display": "30.3",
       "ta_summary": "强多头趋势，MACD零上强势但KDJ中性，量价配合上攻，赔率偏低，上行空间有限，建议持有。"
     },
     {
@@ -844,8 +845,8 @@
       "resistance": 80.37,
       "ret5_pct": -2.909554665357683,
       "ret20_pct": -12.104901204495466,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "69.11B",
+      "pe_forward_display": "30.0",
       "ta_summary": "震荡偏熊格局，MACD零轴上修正但柱值负向扩大，KDJ中性，量能偏弱，赔率高但上行空间有限，建议观望。"
     },
     {
@@ -864,8 +865,8 @@
       "resistance": 814.95,
       "ret5_pct": 20.55836008735501,
       "ret20_pct": 76.14580048020886,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "906.28B",
+      "pe_forward_display": "7.9",
       "ta_summary": "强多头趋势，但KDJ超买且量价中性，上行空间有限，建议持有并观察回踩。"
     },
     {
@@ -884,9 +885,9 @@
       "resistance": 150.0,
       "ret5_pct": 3.089645815721642,
       "ret20_pct": 9.40125967441352,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
-      "ta_summary": "多头趋势但评分偏低，MACD零上强势非多头，KDJ中性，量价放量上攻与下杀并存，赔率偏低，建议持有。"
+      "market_cap_display": "349.81B",
+      "pe_forward_display": "15.3",
+      "ta_summary": "多头趋势但评分偏低，预期震荡，MACD零上强势非多头，KDJ中性，量价放量上攻与下杀并存，赔率偏低，建议持有。"
     },
     {
       "emoji": "⚪",
@@ -904,8 +905,8 @@
       "resistance": 638.34,
       "ret5_pct": 0.611865286862634,
       "ret20_pct": -8.182198816031782,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "1.57T",
+      "pe_forward_display": "17.0",
       "ta_summary": "震荡偏空格局，均线偏熊且MACD偏空，KDJ中性，量价缩量上攻且赔率偏高，多空信号交织，建议观望。"
     },
     {
@@ -924,8 +925,8 @@
       "resistance": 101.13,
       "ret5_pct": -2.648811601154244,
       "ret20_pct": -2.3242156695207017,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "141.77B",
+      "pe_forward_display": "7.0",
       "ta_summary": "偏熊震荡格局，均线空头排列，MACD水下偏空但柱值极弱，KDJ中性，量价有放量上攻迹象，赔率一般，建议持有观察。"
     },
     {
@@ -944,8 +945,8 @@
       "resistance": 245.0,
       "ret5_pct": -8.218725757364787,
       "ret20_pct": -6.549323620694814,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "50.16B",
+      "pe_forward_display": "12.4",
       "ta_summary": "趋势偏空，MACD柱负值且强空释放，KDJ中性偏弱，量价缩量上攻未确认，赔率较高，建议观望。"
     },
     {
@@ -964,7 +965,7 @@
       "resistance": 117.06,
       "ret5_pct": -19.328887516136017,
       "ret20_pct": -6.21788249305647,
-      "market_cap_display": "—",
+      "market_cap_display": "60.73B",
       "pe_forward_display": "—",
       "ta_summary": "强空头趋势，MACD零轴上修正且柱线负值扩大，KDJ偏弱，量能萎缩，支撑压力空间接近，建议观望。"
     },
@@ -984,8 +985,8 @@
       "resistance": 211.2,
       "ret5_pct": -22.514985335382164,
       "ret20_pct": 1.3096250830634037,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "68.08B",
+      "pe_forward_display": "126.7",
       "ta_summary": "空头趋势，均线空头排列，MACD零轴上方修正但柱线负值扩大，KDJ中性偏弱，量能极度萎缩，赔率偏高但缺乏上攻动能，建议观望。"
     },
     {
@@ -1004,8 +1005,8 @@
       "resistance": 172.5,
       "ret5_pct": -8.47177321965077,
       "ret20_pct": -6.621626892721267,
-      "market_cap_display": "—",
-      "pe_forward_display": "—",
+      "market_cap_display": "135.67B",
+      "pe_forward_display": "11.1",
       "ta_summary": "空头趋势，均线空头排列，MACD柱负值且强空释放，KDJ低位未超卖，量价中性偏弱，支撑压力空间有限，建议观望。"
     }
   ],
@@ -1275,5 +1276,5 @@
       "data_perspective_md": "**均线排列**: 空头排列：MA5(172.46) < MA10(178.61) < MA20(180.11)，趋势向下 | 多头排列: ❌ 否 | 趋势强度: 25/100\n\n\n💡 *放量下跌表示抛压加大，空头力量增强*"
     }
   ],
-  "generated_at": "2026-05-14T16:53:12+08:00"
+  "generated_at": "2026-05-14T17:59:49+08:00"
 }

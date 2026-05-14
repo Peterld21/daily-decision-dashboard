@@ -178,6 +178,21 @@ REPORT_MD="${REPORTS_DIR}/report_${REPORT_DATE}.md"
 [[ -f "$REPORT_MD" ]] || { err "$REPORT_MD 不存在"; exit 2; }
 ok "report_date = ${REPORT_DATE}    md = ${REPORT_MD}"
 
+# === 2a) Rebuild benchmark JSON from最新 SQLite ===============================
+# main.py 内部 prefetch QQQ 时 SQLite 当天数据还没入库，会用旧 QQQ forward-fill；
+# 这里 main.py 已经跑完、SQLite 已经入库最新 QQQ，立刻重算，覆盖 main.py 的产物。
+if [[ $SKIP_ANALYZE -eq 0 ]]; then
+  step "1.5/5  rebuild_benchmark_from_db.py  (用最新 SQLite 重算 QQQ benchmark)"
+  pushd "$DSA_DIR" >/dev/null
+  if run_step "rebuild_benchmark_from_db" \
+       "$PYTHON_BIN" -u scripts/rebuild_benchmark_from_db.py "$REPORT_MD"; then
+    ok "benchmark_vs_qqq_${REPORT_DATE}.json 已用最新 SQLite 重建"
+  else
+    warn "重建 benchmark 失败；将沿用 main.py 产物（可能存在 QQQ forward-fill 问题）"
+  fi
+  popd >/dev/null
+fi
+
 # === 2) 交易动作（规则 + LLM 总结） ===========================================
 TA_MD="${REPORTS_DIR}/trade_action_${REPORT_DATE}.md"
 if [[ $SKIP_TRADE_ACTION -eq 0 ]]; then
