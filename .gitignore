@@ -18,3 +18,6 @@ dist/
 
 # Local serving
 .python-http-server.pid
+
+# Local publish config (含 STOCKS 等用户私有偏好)
+scripts/publish.config.sh
