@@ -346,7 +346,7 @@ a:hover { text-decoration: underline; }
 }
 .chart-box {
   width: 100%;
-  height: 260px;
+  height: 300px;
   background: #fafafa;
 }
 .benchmark-chart {
@@ -407,6 +407,10 @@ a:hover { text-decoration: underline; }
 .vp-legend .vp-s2 { color: #6a1b9a; font-weight: 600; }
 .vp-legend .vp-s3 { color: #00838f; font-weight: 600; }
 .vp-legend .vp-s4 { color: #f57c00; font-weight: 600; }
+.vp-legend-compact {
+  font-size: 0.62rem;
+  line-height: 1.35;
+}
 
 .card-body {
   padding: 0.45rem 0.55rem 0.65rem;
@@ -535,8 +539,9 @@ a:hover { text-decoration: underline; }
   /* 卡片：一列；图表更扁；正文不要嵌套滚动 */
   .stocks-grid { grid-template-columns: 1fr; gap: 8px; }
   .stock-card { border-radius: 12px; }
-  .chart-box { height: 220px; }
+  .chart-box { height: 260px; }
   .benchmark-chart { height: 170px; }
+  .indices-cumulative-chart { height: 260px; }
   .card-body {
     max-height: none;        /* 关键：去掉嵌套滚动，让外层滚动接管 */
     overflow-y: visible;
@@ -557,11 +562,215 @@ a:hover { text-decoration: underline; }
   }
 }
 
+/* =====================================================================
+ * 顶层 Tab（个股分析 / 指数趋势）—— 对齐 intro 卡片式表面
+ * ===================================================================*/
+
+.page-tab-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.45rem 0.55rem;
+  margin: 0 0 0.65rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.page-tab {
+  appearance: none;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.45rem 0.95rem;
+  border-radius: 8px;
+  font-weight: 650;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.2;
+}
+
+.page-tab:hover {
+  background: rgba(21, 101, 192, 0.07);
+  color: var(--text);
+}
+
+.page-tab.active {
+  background: #1565c0;
+  color: #ffffff;
+}
+
+.dashboard-panel.indices-panel > .benchmark-intro {
+  padding-bottom: 1rem;
+}
+
+.benchmark-intro h2 {
+  margin: 0 0 0.45rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.benchmark-intro .benchmark-lead {
+  margin: 0 0 0.85rem;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.benchmark-intro .benchmark-lead code {
+  font-size: 0.78rem;
+}
+
+.benchmark-inner-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.35rem;
+  margin: 0 0 0.85rem;
+  background: linear-gradient(180deg, #f3f6f9 0%, #ebeff5 100%);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.benchmark-subtab {
+  appearance: none;
+  margin: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.38rem 0.82rem;
+  border-radius: 8px;
+  font-weight: 650;
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.benchmark-subtab.active {
+  background: #ffffff;
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+.benchmark-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.45rem;
+  margin: 0 0 0.85rem;
+}
+
+.benchmark-meta-pill {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.62rem;
+  background: linear-gradient(180deg, #ffffff, #f8fafb);
+}
+
+.benchmark-meta-label {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.2rem;
+}
+
+.benchmark-meta-value {
+  font-size: 1.05rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.benchmark-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+}
+
+.benchmark-metric {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.52rem 0.62rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fc 100%);
+}
+
+.benchmark-metric-label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+  line-height: 1.2;
+}
+
+.benchmark-metric-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.benchmark-metric-value.positive { color: #0d7c4d; }
+.benchmark-metric-value.negative { color: #c42b2b; }
+
+.benchmark-chart-shell {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fafbfc;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.indices-cumulative-chart {
+  width: 100%;
+  height: 360px;
+}
+
+.benchmark-desc {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.55;
+  margin-bottom: 0.55rem;
+}
+
+.benchmark-foot {
+  font-size: 0.76rem;
+  margin: 0 0 0.35rem;
+}
+
+.benchmark-foot code {
+  font-size: 0.72rem;
+}
+
+.benchmark-intro .muted { color: var(--muted); }
+
+.benchmark-load {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.benchmark-error {
+  margin-top: 0.5rem;
+  padding: 0.62rem 0.72rem;
+  border: 1px solid #ffcdd2;
+  border-radius: var(--radius);
+  background: #ffebee;
+  color: #b71c1c;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 960px) {
+  .indices-cumulative-chart { height: 300px; }
+}
+
 /* 超小屏（< 380px，老 iPhone SE 之类） */
 @media (max-width: 380px) {
   .summary-table { font-size: 0.7rem; }
   .summary-table th, .summary-table td { padding: 0.22rem 0.28rem; }
   .macro-chart { height: 200px; }
-  .chart-box { height: 200px; }
+  .chart-box { height: 240px; }
   .benchmark-chart { height: 150px; }
+  .indices-cumulative-chart { height: 220px; }
 }

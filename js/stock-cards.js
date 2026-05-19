@@ -5,13 +5,11 @@
 import { fetchJSON, h, slug, renderMarkdown, signalClass } from './utils.js';
 import { buildKlineOption, buildBenchmarkOption, disposeOnExit } from './chart-helpers.js';
 
-const VP_LEGEND_HTML = `
-<p class="vp-legend">
-  <strong>量价菱形</strong>（相对 5 日均量）：
-  <span class="vp-s1">放量上涨</span>、<span class="vp-s2">放量下跌</span>、
-  <span class="vp-s3">缩量上涨</span>、<span class="vp-s4">缩量下跌</span>。
-  放量：&gt; 均量×1.2；缩量：&lt; 均量×0.8。
-</p>`;
+const VP_LEGEND_HTML =
+  '<p class="vp-legend vp-legend-compact">K 线上方小字为量价信号（相对 5 日均量；' +
+  '<span class="vp-s1">放量涨</span> <span class="vp-s2">放量跌</span> ' +
+  '<span class="vp-s3">缩量涨</span> <span class="vp-s4">缩量跌</span>）。' +
+  '放量 &gt; 均量×1.2；缩量 &lt; 均量×0.8。</p>';
 
 /** 构造卡片 DOM；不立即拉图表数据。 */
 function buildCardEl(card) {

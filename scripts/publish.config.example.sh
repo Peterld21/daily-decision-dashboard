@@ -23,8 +23,10 @@ RUN_FUNDAMENTALS=1
 # 是否走 DeepSeek 精简摘要 (`--no-ta-summary-llm` 反向开关)；默认 1（开）
 USE_TA_SUMMARY_LLM=1
 
-# K 线天数（report_to_json --bars）
-CHART_BARS=60
+# 是否拉取「指数趋势」五指数 CSV 并重算 webapp/data/benchmark_indices.json
+# （默认开；需在 publish 时能访问 historyofmarket + Yahoo；访客浏览器不落外部 API）
+
+RUN_BENCHMARK_INDICES=1
 
 # Git commit 作者（留空则用当前 git config）
 # GIT_AUTHOR_NAME="Peter Li"

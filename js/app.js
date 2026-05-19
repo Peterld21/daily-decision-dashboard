@@ -13,8 +13,11 @@ import { renderMacroHero } from './macro-hero.js';
 import { renderIntelDigest } from './intel-digest.js';
 import { renderSummaryTable, renderTOC } from './summary-table.js';
 import { renderCards } from './stock-cards.js';
+import { attachPageTabs } from './benchmark-indices.js';
 
 const DATA_BASE = 'data';
+
+attachPageTabs(DATA_BASE);
 
 /** 全局数据仓库（轻量、扁平、可观测）。 */
 const STORE = {

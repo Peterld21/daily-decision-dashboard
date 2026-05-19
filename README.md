@@ -35,6 +35,7 @@ webapp/
 │   ├── intel-digest.js   # 重要信息总览（利空/利好）
 │   ├── summary-table.js  # 决策摘要表
 │   ├── stock-cards.js    # 个股卡片渲染
+│   ├── benchmark-indices.js # 「指数趋势」Tab（读 benchmark_indices.json + ECharts）
 │   ├── kline.js          # 个股 K 线 ECharts option
 │   └── benchmark.js      # 个股 vs QQQ 累计涨跌幅
 └── data/
@@ -148,27 +149,51 @@ webapp/
 }
 ```
 
+### 3.4 `data/benchmark_indices.json`（「指数趋势」Tab）
+
+> 五条指数对齐基期后的累计涨跌曲线；前端只读这一份 JSON。
+
+- **产出（本机跑一次，不进浏览器）**：`benchmark_return/fetch_benchmark_data.py` 拉 historyofmarket + Yahoo → 本地 CSV（默认 `benchmark_return/market_prices_post2020_publish.csv`，已 `.gitignore`）→ `generate_benchmark_html.py` 写入 **`data/benchmark_indices.json`**。  
+- **发布**：默认已并入 `./scripts/publish.sh`；可在 `publish.config.sh` 里设 `RUN_BENCHMARK_INDICES=0`，或 CLI 传 `--skip-benchmark-indices`（离线 / 数据源故障时）。  
+
 ---
 
 ## 四、本地构建 → 推送 GitHub 流程
 
+**推荐**：在 `webapp/` 下一键跑满并可选推送（含指数 JSON，见脚本头注释）：
+
 ```bash
-# 1) 跑你的分析流水线（已有）
+cd webapp
+./scripts/publish.sh --push
+```
+
+等价的手动分拆步骤如下（便于理解每一环）：
+
+```bash
+# 1) 跑分析流水线（在 daily_stock_analysis）
 cd daily_stock_analysis
 .venv/bin/python main.py ...
 .venv/bin/python scripts/generate_trade_action_report.py reports/report_YYYYMMDD.md
 .venv/bin/python scripts/fetch_watchlist_fundamentals_xueqiu.py --date YYYYMMDD --report reports/report_YYYYMMDD.md
 
-# 2) ★ 新增一步：把 md/csv/json/SQLite → webapp/data/*.json
+# 1b) 指数趋势静态 JSON（与 publish.sh 内置步骤一致）
+.venv/bin/python ../webapp/benchmark_return/fetch_benchmark_data.py
+.venv/bin/python ../webapp/benchmark_return/generate_benchmark_html.py --input market_prices_post2020_publish.csv
+
+# 2) 把 md/csv/json/SQLite → webapp/data/*.json（首屏个股等）
 .venv/bin/python scripts/report_to_json.py reports/report_YYYYMMDD.md \
     --out ../webapp/data
 
-# 3) 推送到 GitHub
+# 3) 推送（通常只提交 data/；也可用 publish.sh）
 cd ../webapp
 git add data/ && git commit -m "auto-update dashboard YYYYMMDD" && git push
 ```
 
 GitHub 收到 push 后，Cloudflare Pages 会自动构建并部署整站。
+
+**端到端链路**（GitHub Actions、GitHub Pages 备用、`publish.sh`、与 Cloudflare 的分工）：见工作区上一级 [`PROJECT_PIPELINE_AND_DEPLOYMENT.md`](../PROJECT_PIPELINE_AND_DEPLOYMENT.md)（与 `webapp/` 同属 `webapp_dev` 根目录时可用此相对路径）。
+
+**只改前端、先用本地已有数据预览**：不要在未确认前就把 `data/` 推上线。用 [`LOCAL_PREVIEW.md`](./LOCAL_PREVIEW.md) 中的 `./scripts/local-preview.sh`（从 `report_*.md` 编译 JSON，可选 `--offline` / `--serve`），确认后再执行 `./scripts/publish.sh --data-only --push`。
 
 ---
 
@@ -180,7 +205,7 @@ python3 -m http.server 8000
 # 浏览器打开 http://localhost:8000
 ```
 
-> 用 `http.server` 而非 `file://` 直接打开，避免 ES Modules / `fetch` 的 CORS 限制。
+> 用 `http.server` 而非 `file://` 直接打开，避免 ES Modules / `fetch` 的 CORS 限制。更简单的一步见 [`LOCAL_PREVIEW.md`](./LOCAL_PREVIEW.md)（自动从 `daily_stock_analysis/reports/` 生成 `data/` 并可带 `--serve`）。
 
 ---
 

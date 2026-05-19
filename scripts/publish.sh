@@ -4,12 +4,19 @@
 # ============================================================================
 # publish.sh — 一键发布每日决策仪表盘
 #
-#   1) 在 daily_stock_analysis 跑完整本地流水线：
-#        - main.py                          (行情 API + 新闻 + LLM 综合分析)
-#        - generate_trade_action_report.py  (规则引擎 + LLM 总结)
+#   1) 在 daily_stock_analysis 跑主流程（可 --skip-* 分段跳过）：
+#        - main.py                          (行情 API + 新闻 + LLM)
+#        - rebuild_benchmark_from_db.py     (SQLite 对齐 QQQ 个股基准)
+#        - generate_trade_action_report.py（交易动作）
 #        - fetch_watchlist_fundamentals     (可选；雪球基本面)
-#   2) report_to_json.py 把 md/csv/json/SQLite 序列化成 webapp/data/**.json
-#   3) git add / commit / push    →    Cloudflare Pages 自动重建
+#
+#   2) benchmark_return（仪表盘「指数趋势」Tab；默认开，可跳过）：
+#        - fetch_benchmark_data.py → market_prices_post2020_publish.csv（本地产物，不进库）
+#        - generate_benchmark_html.py → ../data/benchmark_indices.json（静态同源，访客零外部 API）
+#
+#   3) report_to_json.py → webapp/data/**
+#
+#   4) git add data/ (+ commit)，可选 --push → Cloudflare Pages
 #
 # 用法：
 #   ./scripts/publish.sh                # dry-run，落地 JSON 但不 push
@@ -17,6 +24,7 @@
 #   ./scripts/publish.sh --data-only    # 跳过本地分析、只重转 JSON 并 push
 #   ./scripts/publish.sh --date 20260505 --push
 #   ./scripts/publish.sh --skip-fundamentals --push
+#   ./scripts/publish.sh --skip-benchmark-indices --push   # 禁拉五指数 CSV（离线 / 数据源故障）
 #   ./scripts/publish.sh --no-llm-summary --push
 #
 # 退出码：
@@ -91,6 +99,7 @@ else
   warn "未找到 ${CONFIG}；将使用默认值"
   warn "建议：cp scripts/publish.config.example.sh scripts/publish.config.sh 后编辑 STOCKS"
 fi
+RUN_BENCHMARK_INDICES="${RUN_BENCHMARK_INDICES:-1}"
 
 # --- 参数解析 -----------------------------------------------------------------
 while [[ $# -gt 0 ]]; do
@@ -101,12 +110,13 @@ while [[ $# -gt 0 ]]; do
     --skip-analyze)        SKIP_ANALYZE=1; shift ;;
     --skip-trade-action)   SKIP_TRADE_ACTION=1; shift ;;
     --skip-fundamentals)   RUN_FUNDAMENTALS=0; shift ;;
+    --skip-benchmark-indices) RUN_BENCHMARK_INDICES=0; shift ;;
     --no-llm-summary)      USE_TA_SUMMARY_LLM=0; shift ;;
     --date)                FORCE_DATE="${2:-}"; shift 2 ;;
     --stocks)              STOCKS="${2:-}"; shift 2 ;;
     --bars)                CHART_BARS="${2:-60}"; shift 2 ;;
     -h|--help)
-      sed -n '2,40p' "$0"
+      sed -n '2,52p' "$0"
       exit 0 ;;
     *)
       err "未知参数：$1"
@@ -140,6 +150,8 @@ if [[ $PUSH       -eq 1 ]]; then PUSH_STR="yes";          else PUSH_STR="no (dry
 if [[ $DATA_ONLY  -eq 1 ]]; then DATAONLY_STR="yes";      else DATAONLY_STR="no";       fi
 STOCKS_STR="${STOCKS:-[skipped]}"
 
+if [[ $RUN_BENCHMARK_INDICES -eq 1 ]]; then BENCH_STR="yes"; else BENCH_STR="no"; fi
+
 step "Plan"
 printf "  ${CYAN}WEBAPP_ROOT${RESET}  %s\n" "$WEBAPP_ROOT"
 printf "  ${CYAN}DSA_DIR    ${RESET}  %s\n" "$DSA_DIR"
@@ -147,6 +159,7 @@ printf "  ${CYAN}PYTHON_BIN ${RESET}  %s\n" "$PYTHON_BIN"
 printf "  ${CYAN}STOCKS     ${RESET}  %s\n" "$STOCKS_STR"
 printf "  ${CYAN}PUSH       ${RESET}  %s\n" "$PUSH_STR"
 printf "  ${CYAN}DATA_ONLY  ${RESET}  %s\n" "$DATAONLY_STR"
+printf "  ${CYAN}BENCH_TAB  ${RESET}  %s  (historyofmarket + Yahoo → benchmark_indices.json)\n" "$BENCH_STR"
 [[ -n "$FORCE_DATE" ]] && printf "  ${CYAN}FORCE_DATE ${RESET}  %s\n" "$FORCE_DATE"
 
 # === 1) 行情 API + 新闻 + LLM 主分析 ==========================================
@@ -225,6 +238,29 @@ else
   warn "跳过 fetch_watchlist_fundamentals_xueqiu.py (--skip-fundamentals 或 --data-only)"
 fi
 
+# === 3b) 五指数 CSV → 仪表盘「指数趋势」JSON（本机流水线拉取；访客浏览器只读静态 JSON）
+BENCH_DIR="${WEBAPP_ROOT}/benchmark_return"
+if [[ $RUN_BENCHMARK_INDICES -eq 1 ]]; then
+  step "fetch_benchmark_data + generate_benchmark_html  (benchmark_indices.json)"
+  if run_step "fetch_benchmark_data" \
+       "$PYTHON_BIN" -u "${BENCH_DIR}/fetch_benchmark_data.py" \
+       --output market_prices_post2020_publish.csv; then
+    pushd "$BENCH_DIR" >/dev/null || exit 2
+    if run_step "generate_benchmark_html" \
+         "$PYTHON_BIN" -u generate_benchmark_html.py \
+         --input market_prices_post2020_publish.csv; then
+      ok "指数趋势数据源已写入 webapp/data/benchmark_indices.json"
+    else
+      warn "generate_benchmark_html.py 失败；指数趋势 Tab 可能仍为旧数据"
+    fi
+    popd >/dev/null
+  else
+    warn "fetch_benchmark_data 失败（网络或第三方 API）；跳过指数 CSV/JSON（沿用仓库内既有 benchmark_indices.json）"
+  fi
+else
+  warn "跳过 fetch_benchmark_data (--skip-benchmark-indices / publish.config RUN_BENCHMARK_INDICES=0)"
+fi
+
 # === 4) Markdown → JSON =======================================================
 step "4/4  report_to_json.py  (落地 webapp/data/**)"
 JSON_ARGS=(
@@ -244,6 +280,7 @@ ok "JSON 已落地：$WEBAPP_DATA"
 step "Snapshot of webapp/data/"
 ( cd "$WEBAPP_ROOT" && \
   printf "  manifest.json                       %s\n" "$(wc -c < data/manifest.json 2>/dev/null) B" && \
+  printf "  data/benchmark_indices.json           %s\n" "$(wc -c < data/benchmark_indices.json 2>/dev/null) B" && \
   printf "  reports/${REPORT_DATE}/index.json   %s\n" "$(wc -c < data/reports/${REPORT_DATE}/index.json 2>/dev/null) B" && \
   charts=$(/bin/ls -1 data/reports/${REPORT_DATE}/charts/*.json 2>/dev/null | wc -l | tr -d ' ') && \
   printf "  reports/${REPORT_DATE}/charts/      %s 个 ticker\n" "$charts"

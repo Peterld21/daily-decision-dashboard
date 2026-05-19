@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>决策仪表盘</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-  <link rel="stylesheet" href="css/main.css?v=20260514c" />
+  <link rel="stylesheet" href="css/main.css?v=20260519a" />
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest" />
@@ -25,6 +25,32 @@
 </head>
 <body>
   <div class="wrap">
+    <div class="page-tab-strip" role="tablist" aria-label="主视图切换">
+      <button
+        type="button"
+        class="page-tab active"
+        id="tab-stock-panel"
+        role="tab"
+        aria-selected="true"
+        aria-controls="panel-stocks"
+        data-panel="stocks"
+      >
+        个股分析
+      </button>
+      <button
+        type="button"
+        class="page-tab"
+        id="tab-indices-panel"
+        role="tab"
+        aria-selected="false"
+        aria-controls="panel-indices"
+        data-panel="indices"
+      >
+        指数趋势
+      </button>
+    </div>
+
+    <div id="panel-stocks" class="dashboard-panel stocks-panel" role="tabpanel" aria-labelledby="tab-stock-panel">
     <!-- 顶部：宏观图 + 信息总览（两栏） -->
     <section class="intro">
       <div class="intro-hero-row">
@@ -96,9 +122,51 @@
     <p class="footer-note" id="footer-note">
       来源：本地 <code>report_to_json.py</code> 产出 · 浏览器零外部 API 调用 · K 线仅供复盘参考
     </p>
+    </div>
+
+    <div
+      id="panel-indices"
+      class="dashboard-panel indices-panel"
+      role="tabpanel"
+      aria-labelledby="tab-indices-panel"
+      hidden
+      aria-hidden="true"
+    >
+      <section class="intro benchmark-intro" aria-labelledby="benchmark-title">
+        <h2 id="benchmark-title">指数累计涨跌</h2>
+        <p class="benchmark-lead">
+          S&amp;P 500、Nasdaq、SMH、XLK、XLF：与单机报告 <code>cumulative_returns_*.html</code> 对齐基期，
+          数据来自 <code>benchmark_return/</code> 下同一套 CSV，
+          <code>generate_benchmark_html.py</code> 导出 <code>data/benchmark_indices.json</code> 供本站展示。
+        </p>
+        <div class="benchmark-inner-tabs" role="tablist" aria-label="指数累计涨跌视图">
+          <button
+            type="button"
+            class="benchmark-subtab active"
+            role="tab"
+            aria-selected="true"
+            data-bench-view="sinceBase"
+          >
+            自基期以来
+          </button>
+          <button type="button" class="benchmark-subtab" role="tab" aria-selected="false" data-bench-view="ytd">
+            2026 YTD
+          </button>
+        </div>
+        <div class="benchmark-meta-grid" id="benchmark-meta-grid"></div>
+        <div class="benchmark-metrics-row" id="benchmark-metrics-row"></div>
+        <div class="benchmark-chart-shell">
+          <div id="benchmark-echart" class="indices-cumulative-chart"></div>
+        </div>
+        <div class="benchmark-desc" id="benchmark-desc"></div>
+        <p class="benchmark-foot muted" id="benchmark-foot-note"></p>
+        <p id="benchmark-load-state" class="benchmark-load muted" hidden aria-live="polite">正在准备图表…</p>
+        <div id="benchmark-error" class="benchmark-error" hidden role="alert"></div>
+      </section>
+    </div>
   </div>
 
-  <script type="module" src="js/app.js?v=20260514c"></script>
-  <script type="module" src="js/pwa.js?v=20260514c"></script>
+  <script type="module" src="js/app.js?v=20260519a"></script>
+  <script type="module" src="js/pwa.js?v=20260519a"></script>
 </body>
 </html>

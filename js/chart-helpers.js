@@ -1,7 +1,7 @@
 /**
  * ECharts 通用配置工厂：
  *  - K 线主图 + 成交量副图（双 grid）
- *  - 量价菱形 / 金叉死叉 / 操作点位 markLine 与 markPoint 渲染
+ *  - 量价信号与金叉死叉均在 K 线上标注；成交量仅柱状，无叠加符号
  *  - benchmark vs QQQ 双折线
  *  - 宏观 hero（QQQ/SCHD + 恐贪）三轴
  *
@@ -31,7 +31,7 @@ if (typeof window !== 'undefined') {
   }
 }
 
-/** K 线 option 工厂。 */
+/** K 线 option 工厂（含底部时间区间滑块 dataZoom，与成交量联动）。 */
 export function buildKlineOption(payload) {
   if (!payload || !payload.dates || !payload.dates.length) return null;
 
@@ -47,7 +47,7 @@ export function buildKlineOption(payload) {
   if (levels.stop_loss != null)  priceMarklines.push({ yAxis: levels.stop_loss,  lineStyle: { color: '#c62828', type: 'dashed', width: 1 }, label: { formatter: '止损' } });
   if (levels.target != null)     priceMarklines.push({ yAxis: levels.target,     lineStyle: { color: '#6a1b9a', type: 'dashed', width: 1 }, label: { formatter: '目标' } });
 
-  // 金叉死叉 markPoint
+  // 金叉死叉 markPoint（K 线主图）
   const crossMarks = crosses.map(c => ({
     name: c.label,
     coord: [c.date, c.price],
@@ -57,7 +57,13 @@ export function buildKlineOption(payload) {
     label: { show: true, formatter: c.label, fontSize: 9, color: '#fff' },
   }));
 
-  // 量价菱形（绘制在成交量子图上）
+  // 量价信号：与金叉相同，标在 K 线价位（coord 已是当日收/代表价），不再叠在成交量上
+  const vpShort = {
+    '放量上涨': '放量涨',
+    '放量下跌': '放量跌',
+    '缩量上涨': '缩量涨',
+    '缩量下跌': '缩量跌',
+  };
   const vpColors = {
     '放量上涨': '#1565c0',
     '放量下跌': '#6a1b9a',
@@ -67,12 +73,21 @@ export function buildKlineOption(payload) {
   const vpMarks = volPts.map(v => ({
     name: v.label,
     coord: [v.date, v.price],
-    symbol: 'diamond',
-    symbolSize: 8,
-    symbolOffset: [0, 18],
+    symbol: 'circle',
+    symbolSize: 5,
     itemStyle: { color: vpColors[v.label] || '#90a4ae', borderColor: '#263238', borderWidth: 1 },
-    label: { show: true, formatter: v.label, fontSize: 7, color: '#37474f', offset: [0, 20] },
+    label: {
+      show: true,
+      formatter: vpShort[v.label] || v.label,
+      fontSize: 8,
+      color: vpColors[v.label] || '#37474f',
+      position: 'top',
+      distance: 6,
+      fontWeight: '600',
+    },
   }));
+
+  const klineMarkPoints = [...crossMarks, ...vpMarks];
 
   return {
     animation: false,
@@ -83,8 +98,8 @@ export function buildKlineOption(payload) {
       textStyle: { fontSize: 10 },
     },
     grid: [
-      { left: 40, right: 16, top: 30, height: '60%' },
-      { left: 40, right: 16, top: '75%', height: '18%' },
+      { left: 40, right: 16, top: 30, height: '48%' },
+      { left: 40, right: 16, top: '68%', height: '14%' },
     ],
     xAxis: [
       { type: 'category', data: dates, scale: true, boundaryGap: false, axisLabel: { fontSize: 9 }, axisLine: { onZero: false }, splitLine: { show: false } },
@@ -95,7 +110,35 @@ export function buildKlineOption(payload) {
       { gridIndex: 1, splitNumber: 2, axisLabel: { show: false }, splitLine: { show: false } },
     ],
     dataZoom: [
-      { type: 'inside', xAxisIndex: [0, 1], start: 0, end: 100 },
+      { type: 'inside', xAxisIndex: [0, 1], start: 0, end: 100, filterMode: 'filter' },
+      {
+        type: 'slider',
+        xAxisIndex: [0, 1],
+        start: 0,
+        end: 100,
+        bottom: 6,
+        height: 22,
+        filterMode: 'filter',
+        borderColor: '#cfd8dc',
+        backgroundColor: '#fafafa',
+        fillerColor: 'rgba(21, 101, 192, 0.12)',
+        handleStyle: { color: '#1565c0', borderColor: '#0d47a1' },
+        moveHandleStyle: { color: '#1565c0' },
+        dataBackground: {
+          lineStyle: { color: '#90a4ae', width: 0.8 },
+          areaStyle: { color: 'rgba(144, 164, 174, 0.2)' },
+        },
+        selectedDataBackground: {
+          lineStyle: { color: '#1565c0', width: 1 },
+          areaStyle: { color: 'rgba(21, 101, 192, 0.15)' },
+        },
+        emphasis: {
+          handleStyle: { borderColor: '#0d47a1', borderWidth: 2 },
+        },
+        showDetail: false,
+        brushSelect: true,
+        z: 50,
+      },
     ],
     tooltip: {
       trigger: 'axis',
@@ -109,7 +152,7 @@ export function buildKlineOption(payload) {
         data: ohlc,
         itemStyle: { color: '#c62828', color0: '#1b5e20', borderColor: '#c62828', borderColor0: '#1b5e20' },
         markLine: priceMarklines.length ? { silent: true, symbol: 'none', label: { fontSize: 9 }, data: priceMarklines } : undefined,
-        markPoint: crossMarks.length ? { data: crossMarks } : undefined,
+        markPoint: klineMarkPoints.length ? { data: klineMarkPoints } : undefined,
       },
       { name: 'MA5',  type: 'line', data: ma5  || [], smooth: true, showSymbol: false, lineStyle: { width: 1, color: '#ff9800' } },
       { name: 'MA10', type: 'line', data: ma10 || [], smooth: true, showSymbol: false, lineStyle: { width: 1, color: '#7e57c2' } },
@@ -121,7 +164,6 @@ export function buildKlineOption(payload) {
         yAxisIndex: 1,
         data: volume || [],
         itemStyle: { color: '#90a4ae' },
-        markPoint: vpMarks.length ? { data: vpMarks } : undefined,
       },
     ],
   };

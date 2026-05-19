@@ -2,6 +2,15 @@
 .DS_Store
 ._*
 
+# Local benchmark pipeline（仅 JSON 入库；不重提较大 CSV）
+
+benchmark_return/market_prices_post2020_publish.csv
+benchmark_return/cumulative_returns_since_*.html
+
+# 误拷的 SQLite（不应进 Pages 仓库）
+
+data/*.db
+
 # Editors
 .vscode/
 .idea/
