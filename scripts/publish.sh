@@ -16,7 +16,13 @@
 #
 #   3) report_to_json.py → webapp/data/**
 #
-#   4) git add data/ (+ commit)，可选 --push → Cloudflare Pages
+#   4) git add data/ (+ commit)，可选 --push → Cloudflare Pages / GitHub
+#
+# 网络：部分网络对 GitHub HTTPS 的 HTTP/2 会间歇性超时（Recv failure / Operation timed out）。
+# publish 时默认 export GIT_HTTP_VERSION=HTTP/1.1，并带有限次重试；可在 publish.config.sh 里覆盖：
+#   GIT_HTTP_VERSION=HTTP/1.1   # 为空则关闭（走系统默认，多为 HTTP/2）
+#   GIT_PUSH_MAX_ATTEMPTS=5
+#   GIT_PUSH_RETRY_DELAY_SEC=20
 #
 # 用法：
 #   ./scripts/publish.sh                # dry-run，落地 JSON 但不 push
@@ -77,6 +83,35 @@ run_step() {
     return $rc
   fi
   return 0
+}
+
+# GitHub HTTPS：HTTP/2 在部分网络下会 recv 超时；仅用环境变量（不写 git config）。
+# 若需恢复默认传输，在 publish.config.sh 中设：  GIT_HTTP_VERSION=
+git_push_with_retries() {
+  local a=1 rc=0
+  local max_attempts="${GIT_PUSH_MAX_ATTEMPTS:-5}"
+  local delay_sec="${GIT_PUSH_RETRY_DELAY_SEC:-20}"
+  if [[ -n "${GIT_HTTP_VERSION+x}" && -z "${GIT_HTTP_VERSION}" ]]; then
+    :
+  else
+    export GIT_HTTP_VERSION="${GIT_HTTP_VERSION:-HTTP/1.1}"
+  fi
+  while [[ $a -le $max_attempts ]]; do
+    log "git push（第 ${a}/${max_attempts} 次） GIT_HTTP_VERSION=${GIT_HTTP_VERSION:-<默认>}"
+    set +e
+    git push
+    rc=$?
+    set -e
+    if [[ $rc -eq 0 ]]; then
+      return 0
+    fi
+    if [[ $a -lt $max_attempts ]]; then
+      warn "git push 失败 (exit=$rc)，${delay_sec}s 后重试…"
+      sleep "$delay_sec"
+    fi
+    a=$((a + 1))
+  done
+  return "$rc"
 }
 
 # --- 默认参数 -----------------------------------------------------------------
@@ -304,7 +339,7 @@ if ! git diff --quiet -- data || ! git diff --cached --quiet -- data; then
   ok "本地 commit 完成：$COMMIT_MSG"
 
   if [[ $PUSH -eq 1 ]]; then
-    if run_step "git push" git push; then
+    if run_step "git push" git_push_with_retries; then
       ok "已 push 到 origin/$(git rev-parse --abbrev-ref HEAD)"
       printf "\n${GREEN}🎉  Cloudflare Pages 将在 30~60s 内重建。${RESET}\n"
       printf "    访问：${CYAN}%s${RESET}\n" "https://daily-decision-dashboard.peterinnyc.workers.dev/"
@@ -313,7 +348,7 @@ if ! git diff --quiet -- data || ! git diff --cached --quiet -- data; then
     fi
   else
     warn "未加 --push；本次为 dry-run，已 commit 但 ${BOLD}未${RESET}${YELLOW}推送。${RESET}"
-    log "下一步：  git -C $WEBAPP_ROOT push    或重跑加 --push"
+    log "下一步：  GIT_HTTP_VERSION=HTTP/1.1 git -C $WEBAPP_ROOT push    或重跑加 --push"
   fi
 else
   ok "data/ 无变化，无需 commit"

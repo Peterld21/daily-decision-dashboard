@@ -31,3 +31,8 @@ RUN_BENCHMARK_INDICES=1
 # Git commit 作者（留空则用当前 git config）
 # GIT_AUTHOR_NAME="Peter Li"
 # GIT_AUTHOR_EMAIL="you@example.com"
+
+# git push → GitHub 网络不稳时可选（publish.sh 已实现默认 HTTP/1.1 + 重试）
+# GIT_HTTP_VERSION=HTTP/1.1
+# GIT_PUSH_MAX_ATTEMPTS=5
+# GIT_PUSH_RETRY_DELAY_SEC=20
