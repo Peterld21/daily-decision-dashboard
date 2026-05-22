@@ -774,3 +774,192 @@ a:hover { text-decoration: underline; }
   .benchmark-chart { height: 150px; }
   .indices-cumulative-chart { height: 220px; }
 }
+
+/* ---- 当日总结（交易提醒 + 要闻） ---- */
+.daily-digest {
+  margin-bottom: 1rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 55%);
+}
+
+.daily-digest[hidden] { display: none !important; }
+
+.daily-digest-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.72rem;
+  padding-bottom: 0.52rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.daily-digest-head {
+  display: block;
+}
+
+.daily-digest-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  width: 100%;
+}
+
+.daily-digest-lead {
+  margin: 0.28rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.45;
+  width: 100%;
+}
+
+.daily-digest-date,
+.daily-digest-time {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.daily-digest-card {
+  margin: 0;
+  padding: 0.72rem 0.85rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: calc(var(--radius) - 2px);
+  background: #ffffff;
+}
+
+.daily-digest-h3 {
+  margin: 0 0 0.55rem;
+  font-size: 0.94rem;
+  font-weight: 800;
+}
+
+.daily-digest-h4 {
+  margin: 0 0 0.28rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.daily-digest-body {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.52;
+}
+
+.daily-digest-body p {
+  margin: 0 0 0.45rem;
+}
+
+.daily-digest-body p:last-child {
+  margin-bottom: 0;
+}
+
+.daily-digest-one .label {
+  align-self: flex-start;
+}
+
+.daily-digest-one {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.daily-digest-one-bear {
+  margin-top: 0.5rem;
+}
+
+.label-bull {
+  color: #fff;
+  background: #0d7c4d;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.68rem;
+}
+
+.label-bear {
+  color: #fff;
+  background: #c42b2b;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.68rem;
+}
+
+.daily-digest-news-meta {
+  margin: 0.55rem 0 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.daily-digest-meta {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.daily-digest-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+@media (max-width: 720px) {
+  .daily-digest-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.daily-digest-subsection {
+  margin-bottom: 0.55rem;
+}
+
+.daily-digest-subheading {
+  margin: 0 0 0.28rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+}
+
+.daily-digest-subheading.buy { color: #0d7c4d; }
+.daily-digest-subheading.alert { color: #c42b2b; }
+
+.daily-digest-chip {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.12rem 0.36rem;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.daily-digest-text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.52;
+  color: #29303a;
+}
+
+.daily-digest-foot {
+  margin: 0.55rem 0 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.daily-digest-sentiment-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+}
+
+.daily-digest-sentiment-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.daily-digest-sentiment-label.bullish { color: #0d7c4d; }
+.daily-digest-sentiment-label.bearish { color: #c42b2b; }

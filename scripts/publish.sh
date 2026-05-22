@@ -221,10 +221,10 @@ else
   warn "跳过 generate_trade_action_report.py"
 fi
 
-# === 3) 基本面 CSV（雪球） ====================================================
+# === 3) 基本面 CSV（默认有 token 时优先雪球，省 yfinance 耗时；见脚本文档）=======
 FUND_CSV="${REPORTS_DIR}/watchlist_fundamentals_${REPORT_DATE}.csv"
 if [[ $RUN_FUNDAMENTALS -eq 1 ]]; then
-  step "3/4  fetch_watchlist_fundamentals_xueqiu.py  (雪球：市值 / Forward PE)"
+  step "3/4  fetch_watchlist_fundamentals_xueqiu.py  (市值 / Forward PE)"
   pushd "$DSA_DIR" >/dev/null
   if run_step "fetch_watchlist_fundamentals_xueqiu" \
        "$PYTHON_BIN" -u scripts/fetch_watchlist_fundamentals_xueqiu.py \

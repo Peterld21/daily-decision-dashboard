@@ -28,6 +28,41 @@ from datetime import datetime
 from pathlib import Path
 
 
+def forward_fill_aligned_series(series: dict[str, dict[str, float]], wanted_indices: dict):
+    """
+    Align all indices to the union of trading dates from the CSV using last-known close.
+
+    The raw CSV is built from multiple upstream feeds that can diverge by a few days
+    (historically Nasdaq Composite has lagged S&P-style series). Plain date-set
+    intersection would truncate everyone's history to the slowest feed; forward-fill on
+    missing dates preserves comparability while letting the chart run through the newest
+    day available anywhere in the file.
+    """
+    keys = list(wanted_indices.keys())
+    raw = series
+    all_dates_sorted = sorted(set.union(*(set(raw[idx].keys()) for idx in keys)))
+
+    aligned: dict[str, dict[str, float]] = {}
+    for idx in keys:
+        last_val = None
+        dmap: dict[str, float] = {}
+        for d in all_dates_sorted:
+            if d in raw[idx]:
+                last_val = raw[idx][d]
+            if last_val is not None:
+                dmap[d] = last_val
+        aligned[idx] = dmap
+
+    start = max(min(raw[idx].keys()) for idx in keys)
+    common_dates = [
+        d for d in all_dates_sorted
+        if d >= start and all(d in aligned[idx] for idx in keys)
+    ]
+    if not common_dates:
+        raise ValueError('No common trading dates after forward-fill alignment')
+    return aligned, common_dates
+
+
 def load_csv_series(csv_path, wanted_indices):
     """
     Load time series from CSV file.
@@ -96,6 +131,7 @@ def build_views(series, wanted_indices, common_dates, base_date, ytd_dates, ytd_
                 series, wanted_indices, common_dates, base_date, 'sinceBase',
                 '自共同基期以来累计涨跌',
                 f'基期为各指数<strong>首个共同交易日</strong>：<strong>{base_date}</strong>。'
+                '若某一数据源<strong>滞后</strong>数个交易日，则对其<strong>前值填充</strong>以与其余序列对齐至文件内<strong>最晚可用日历</strong>。'
                 '各线为该基期以来累计收益率，可直接对比风格轮动。',
                 '累计涨跌（%）',
             ),
@@ -103,7 +139,7 @@ def build_views(series, wanted_indices, common_dates, base_date, ytd_dates, ytd_
                 series, wanted_indices, ytd_dates, ytd_base_date, 'ytd',
                 f'{ytd_year} 年年初至今（YTD）',
                 f'YTD 起算日为 <strong>{ytd_base_date}</strong>（各指数 {ytd_year} 年首个共有交易日）。'
-                '弱化跨年长期复利基差，便于观察当年相对强弱。',
+                '滞后序列按前值对齐至最晚交易日。弱化跨年长期复利基差，便于观察当年相对强弱。',
                 'YTD 累计涨跌（%）',
             ),
         }
@@ -112,6 +148,7 @@ def build_views(series, wanted_indices, common_dates, base_date, ytd_dates, ytd_
             series, wanted_indices, common_dates, base_date, 'sinceBase',
             'Cumulative Returns Since Base Date',
             f"Base date is the first common trading day on or after 2020-01-01 across all five series: <strong>{base_date}</strong>. "
+            "When one feed trails by a few sessions, missing days are forward-filled so all lines share the calendar through the latest date in this file. "
             "Each line shows cumulative return since that shared base date so cross-index rotation and leadership stay directly comparable.",
             'Cumulative return since base date (%)',
         ),
@@ -119,6 +156,7 @@ def build_views(series, wanted_indices, common_dates, base_date, ytd_dates, ytd_
             series, wanted_indices, ytd_dates, ytd_base_date, 'ytd',
             f'Cumulative Returns YTD ({ytd_year})',
             f"YTD starts from the first common {ytd_year} trading day across all five series: <strong>{ytd_base_date}</strong>. "
+            "Trailing feeds are forward-filled through the newest session in this export. "
             "This isolates the current-year rotation pattern without the distortion of older-year compounding base.",
             f'Cumulative return since {ytd_year} YTD start (%)',
         ),
@@ -138,10 +176,8 @@ def build_dashboard_payload(
     zh=True（默认）：中文标题与说明，对齐仪表盘 Tab「指数趋势」。
     """
     csv_path = Path(csv_path)
-    series = load_csv_series(csv_path, wanted_indices)
-    common_dates = sorted(set.intersection(*[set(values.keys()) for values in series.values()]))
-    if not common_dates:
-        raise ValueError('No common trading dates across required indices')
+    series_raw = load_csv_series(csv_path, wanted_indices)
+    series, common_dates = forward_fill_aligned_series(series_raw, wanted_indices)
     base_date = common_dates[0]
     ytd_year = datetime.now().year
     ytd_dates = [d for d in common_dates if d.startswith(f'{ytd_year}-')]

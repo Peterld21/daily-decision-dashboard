@@ -14,6 +14,7 @@ import { renderIntelDigest } from './intel-digest.js';
 import { renderSummaryTable, renderTOC } from './summary-table.js';
 import { renderCards } from './stock-cards.js';
 import { attachPageTabs } from './benchmark-indices.js';
+import { renderDailyDigest } from './daily-digest.js';
 
 const DATA_BASE = 'data';
 
@@ -53,6 +54,7 @@ async function bootstrap() {
   document.getElementById('footer-note').innerHTML =
     `来源：本地 <code>report_to_json.py</code> 产出 · 报告日期 <strong>${STORE.index.date}</strong> · 浏览器零外部 API 调用`;
 
+  renderDailyDigest(STORE.index.daily_digest);
   renderMacroHero(STORE.index.macro);
   renderIntelDigest(STORE.index.intel);
   renderSummaryTable(STORE.index.summary_rows);

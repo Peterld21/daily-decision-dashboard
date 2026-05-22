@@ -160,7 +160,9 @@ webapp/
 
 ## 四、本地构建 → 推送 GitHub 流程
 
-**推荐**：在 `webapp/` 下一键跑满并可选推送（含指数 JSON，见脚本头注释）：
+**先验收再推 `data/`**：只改 `webapp/` 前端或想快速看效果时，不要用 `file://`；在 `webapp/` 下执行 `./scripts/local-preview.sh --offline --serve`，浏览器打开终端提示的 `http://127.0.0.1:8765/`。详参 [`LOCAL_PREVIEW.md`](./LOCAL_PREVIEW.md)。
+
+**一键全量发布**（含指数 JSON，见脚本头注释）：
 
 ```bash
 cd webapp
@@ -193,7 +195,12 @@ GitHub 收到 push 后，Cloudflare Pages 会自动构建并部署整站。
 
 **端到端链路**（GitHub Actions、GitHub Pages 备用、`publish.sh`、与 Cloudflare 的分工）：见工作区上一级 [`PROJECT_PIPELINE_AND_DEPLOYMENT.md`](../PROJECT_PIPELINE_AND_DEPLOYMENT.md)（与 `webapp/` 同属 `webapp_dev` 根目录时可用此相对路径）。
 
-**只改前端、先用本地已有数据预览**：不要在未确认前就把 `data/` 推上线。用 [`LOCAL_PREVIEW.md`](./LOCAL_PREVIEW.md) 中的 `./scripts/local-preview.sh`（从 `report_*.md` 编译 JSON，可选 `--offline` / `--serve`），确认后再执行 `./scripts/publish.sh --data-only --push`。
+**只改前端、先用本地已有数据预览**：不要在未确认前就把 `data/` 推上线。
+
+- 每日迭代 UI：[`LOCAL_PREVIEW.md`](./LOCAL_PREVIEW.md) 中的 `./scripts/local-preview.sh --offline --serve`（从 `report_*.md` 编译 JSON，与 `publish.sh` **第 4 步**同源；**不**含五指数拉数、**不** git）。
+- 确认后再执行 `./scripts/publish.sh --data-only --push`（仍会按配置刷新 `benchmark_indices.json` 等；见 `LOCAL_PREVIEW.md` 说明）。
+
+与 **单页 HTML（`report_to_html.py`）**、**函数级管线** 合并说明见 [`../daily_stock_analysis/docs/HTML_PIPELINE_OFFLINE.md`](../daily_stock_analysis/docs/HTML_PIPELINE_OFFLINE.md)。
 
 ---
 
