@@ -750,10 +750,10 @@
     ],
     "volume_last_note": "最近交易日：量能约为5日均量的1.0倍（中性），较前日上涨4.0%。",
     "price_levels": {
-      "ideal_buy": 440.0,
-      "second_buy": 443.0,
-      "stop_loss": 405.0,
-      "target": 481.0
+      "ideal_buy": 439.94,
+      "second_buy": 442.61,
+      "stop_loss": 405.9,
+      "target": 481.41
     }
   },
   "benchmark": {

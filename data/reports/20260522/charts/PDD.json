@@ -751,9 +751,9 @@
     "volume_last_note": "最近交易日：量能约为5日均量的1.8倍（放量），较前日下跌3.3%，归类为「放量下跌」。",
     "price_levels": {
       "ideal_buy": null,
-      "second_buy": 5.0,
-      "stop_loss": 92.57,
-      "target": 10.0
+      "second_buy": null,
+      "stop_loss": 94.0,
+      "target": 96.55
     }
   },
   "benchmark": {
