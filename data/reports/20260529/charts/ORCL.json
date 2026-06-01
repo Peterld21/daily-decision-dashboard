@@ -750,10 +750,10 @@
     ],
     "volume_last_note": "最近交易日：量能约为5日均量的2.0倍（放量），较前日上涨10.8%，归类为「放量上涨」。",
     "price_levels": {
-      "ideal_buy": 201.12,
-      "second_buy": 194.45,
-      "stop_loss": 191.63,
-      "target": 260.0
+      "ideal_buy": 207.86,
+      "second_buy": 197.74,
+      "stop_loss": 194.33,
+      "target": 230.0
     }
   },
   "benchmark": {
