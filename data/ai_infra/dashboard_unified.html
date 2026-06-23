@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Infrastructure Dashboard - 主控制台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #ffffff;
+            color: #111827;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: #ffffff;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            padding: 24px 40px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .header-content {
+            max-width: 1920px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .header-meta {
+            display: flex;
+            gap: 24px;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .header-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header-meta-item strong {
+            color: #111827;
+        }
+
+        .nav-tabs {
+            background: #f9fafb;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            padding: 0 40px;
+            display: flex;
+            gap: 8px;
+            position: sticky;
+            top: 76px;
+            z-index: 99;
+        }
+
+        .nav-tab {
+            padding: 12px 24px;
+            color: #6b7280;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .nav-tab:hover {
+            color: #111827;
+            background: rgba(0,0,0,0.03);
+        }
+
+        .nav-tab.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+
+        .content {
+            padding: 24px 40px;
+            max-width: 1920px;
+            margin: 0 auto;
+        }
+
+        .chart-section {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .chart-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-header {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #111827;
+        }
+
+        .section-description {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.6;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .stat-value.positive {
+            color: #34d399;
+        }
+
+        .stat-value.negative {
+            color: #f87171;
+        }
+
+        .stat-value.neutral {
+            color: #3b82f6;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+            font-size: 13px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            margin-top: 60px;
+            background: #f9fafb;
+        }
+
+        .footer p {
+            margin: 4px 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .view-card {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* iframe容器样式 */
+        .iframe-container {
+            width: 100%;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .iframe-container iframe {
+            width: 100%;
+            border: none;
+            display: block;
+            background: white;
+        }
+
+        /* iframe初始高度，实际高度由脚本按内容自动调整 */
+        #cards-iframe {
+            min-height: 2200px;
+        }
+
+        #bubble-focused-iframe {
+            min-height: 760px;
+        }
+
+        #bubble-full-iframe {
+            min-height: 760px;
+        }
+
+        #heatmap-iframe {
+            min-height: 1100px;
+        }
+
+        .sub-section {
+            margin-bottom: 40px;
+        }
+
+        .sub-section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <h1>AI Infrastructure Dashboard</h1>
+                <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">
+                    33支AI硬件股票实时监控 · 估值动量分析 · 资金轮动追踪
+                </p>
+            </div>
+            <div class="header-meta">
+                <div class="header-meta-item">
+                    <span>基期日期:</span>
+                    <strong>2026-01-02</strong>
+                </div>
+                <div class="header-meta-item">
+                    <span>数据源:</span>
+                    <strong>timsun.net + yfinance</strong>
+                </div>
+                <div class="header-meta-item">
+                    <span>更新时间:</span>
+                    <strong>2026-06-23 19:48:20</strong>
+                </div>
+                <div class="header-meta-item">
+                    <span class="badge">实时数据</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showTab('overview')">📊 概览</button>
+        <button class="nav-tab" onclick="showTab('cards')">🎴 行业卡片矩阵</button>
+        <button class="nav-tab" onclick="showTab('bubble')">🫧 动量气泡图</button>
+        <button class="nav-tab" onclick="showTab('heatmap')">🔥 行业轮动热力图</button>
+    </div>
+
+    <div class="content">
+        <!-- Overview Section -->
+        <div id="overview-section" class="chart-section active">
+            <div class="section-header">
+                <h2 class="section-title">Dashboard 概览</h2>
+                <p class="section-description">
+                    本Dashboard追踪33支AI硬件股票，覆盖9大行业细分领域，从上游材料到下游应用，提供实时估值、动量和轮动分析。
+                </p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">追踪股票数</div>
+                    <div class="stat-value neutral">34</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">行业分类</div>
+                    <div class="stat-value neutral">9</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">平均涨跌幅 (30D)</div>
+                    <div class="stat-value positive">+25.4%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">平均 P/E</div>
+                    <div class="stat-value neutral">63.6</div>
+                </div>
+            </div>
+
+            
+        <div class="stat-card" style="margin-top: 24px;">
+            <h3 style="font-size: 18px; margin-bottom: 10px; color: #111827;">核心发现</h3>
+            <ul style="margin-left: 18px; font-size: 14px;"><li style="margin-bottom: 12px; line-height: 1.7; color: #374151;">**板块轮动信号明显**：存储板块30D +69.91%领涨，半导体设备30D +40.63%紧随其后，但下游需求板块30D -1.23%全面回调，资金从AI应用端回流至硬件基础设施</li><li style="margin-bottom: 12px; line-height: 1.7; color: #374151;">**估值极端分化**：存储板块平均PE仅21.01（MU仅10.03），而下游需求板块PE高达149.35（NBIS达785.14），估值洼地与泡沫并存</li><li style="margin-bottom: 12px; line-height: 1.7; color: #374151;">**动量背离机会**：AVGO（30D -2.8%）、GOOGL（30D -10.24%）、AMZN（30D -12.52%）等大盘股近期回调，但PE低于行业均值，存在均值回归潜力</li><li style="margin-bottom: 12px; line-height: 1.7; color: #374151;">**风险警示**：WDC（30D +64.01%）、SNDK（30D +68.05%）等存储股短期涨幅过大，5D分别+36.26%和+16.46%，追高风险极高</li><li style="margin-bottom: 12px; line-height: 1.7; color: #374151;">**关键信号**：AAOI（10D -15.03%）触发2周累计跌幅&gt;8%的均值回归买入信号，网络与互联板块历史胜率85%</li></ul>
+            <p style="margin-top: 14px; font-size: 12px; color: #9ca3af;">来源: stock_analysis_2026-06-23.md</p>
+        </div>
+    
+            
+        <div style="margin-top: 24px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+            <div class="stat-card">
+                <h3 style="font-size: 18px; margin-bottom: 12px; color: #111827;">交易机会 Top 3</h3>
+                <div style="display: grid; gap: 12px;">
+                <div style="padding: 14px 16px; border: 1px solid rgba(0,0,0,0.08); border-radius: 10px; background: #ffffff;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px;">
+                        <strong style="font-size: 15px; color: #111827;">AVGO</strong>
+                        <span style="font-size: 12px; color: #059669; font-weight: 600;">下行趋势 (30D -2.8%)</span>
+                    </div>
+                    <div style="font-size: 13px; color: #374151; line-height: 1.6; margin-bottom: 6px;">PE 20.23远低于均值63.65，30D落后板块24.84%，2周跌幅-14.77%触发均值回归信号</div>
+                    <div style="font-size: 12px; color: #6b7280; line-height: 1.6;">PE 20.23, 30D -2.8%, 10D +0.99%, 5D +7.68%</div>
+                </div>
+                
+                <div style="padding: 14px 16px; border: 1px solid rgba(0,0,0,0.08); border-radius: 10px; background: #ffffff;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px;">
+                        <strong style="font-size: 15px; color: #111827;">GOOGL</strong>
+                        <span style="font-size: 12px; color: #059669; font-weight: 600;">下行趋势 (30D -10.24%)</span>
+                    </div>
+                    <div style="font-size: 13px; color: #374151; line-height: 1.6; margin-bottom: 6px;">PE 24.12低于均值，30D落后板块均值25.37%，10D -3.48%持续回调</div>
+                    <div style="font-size: 12px; color: #6b7280; line-height: 1.6;">PE 24.12, 30D -10.24%, 10D -3.48%, 5D -2.09%</div>
+                </div>
+                
+                <div style="padding: 14px 16px; border: 1px solid rgba(0,0,0,0.08); border-radius: 10px; background: #ffffff;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px;">
+                        <strong style="font-size: 15px; color: #111827;">AMZN</strong>
+                        <span style="font-size: 12px; color: #059669; font-weight: 600;">下行趋势 (30D -12.52%)</span>
+                    </div>
+                    <div style="font-size: 13px; color: #374151; line-height: 1.6; margin-bottom: 6px;">PE 23.56极低，30D落后板块均值25.37%，10D -5.61%加速下跌</div>
+                    <div style="font-size: 12px; color: #6b7280; line-height: 1.6;">PE 23.56, 30D -12.52%, 10D -5.61%, 5D -0.56%</div>
+                </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <h3 style="font-size: 18px; margin-bottom: 12px; color: #111827;">风险观察 Top 3</h3>
+                <div style="display: grid; gap: 12px;">
+                <div style="padding: 14px 16px; border: 1px solid rgba(0,0,0,0.08); border-radius: 10px; background: #ffffff;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px;">
+                        <strong style="font-size: 15px; color: #111827;">ARM</strong>
+                        <span style="font-size: 12px; color: #dc2626; font-weight: 600;">上行趋势 (30D +91.6%)</span>
+                    </div>
+                    <div style="font-size: 13px; color: #374151; line-height: 1.6; margin-bottom: 6px;">PE 132.2极高，30D +91.6%远超板块均值26.17%，5D +15.33%加速上涨</div>
+                    <div style="font-size: 12px; color: #6b7280; line-height: 1.6;">PE 132.2, 30D +91.6%, 10D +19.05%, 5D +15.33%</div>
+                </div>
+                
+                <div style="padding: 14px 16px; border: 1px solid rgba(0,0,0,0.08); border-radius: 10px; background: #ffffff;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px;">
+                        <strong style="font-size: 15px; color: #111827;">WDC</strong>
+                        <span style="font-size: 12px; color: #dc2626; font-weight: 600;">上行趋势 (30D +64.01%)</span>
+                    </div>
+                    <div style="font-size: 13px; color: #374151; line-height: 1.6; margin-bottom: 6px;">30D +64.01%但5D +36.26%极度超买，PE 40.58高于存储均值21.01</div>
+                    <div style="font-size: 12px; color: #6b7280; line-height: 1.6;">PE 40.58, 30D +64.01%, 10D +40.72%, 5D +36.26%</div>
+                </div>
+                
+                <div style="padding: 14px 16px; border: 1px solid rgba(0,0,0,0.08); border-radius: 10px; background: #ffffff;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px;">
+                        <strong style="font-size: 15px; color: #111827;">SNDK</strong>
+                        <span style="font-size: 12px; color: #dc2626; font-weight: 600;">上行趋势 (30D +68.05%)</span>
+                    </div>
+                    <div style="font-size: 13px; color: #374151; line-height: 1.6; margin-bottom: 6px;">30D +68.05%且5D +16.46%持续拉升，PE 12.42虽低但涨幅已透支</div>
+                    <div style="font-size: 12px; color: #6b7280; line-height: 1.6;">PE 12.42, 30D +68.05%, 10D +39.98%, 5D +16.46%</div>
+                </div>
+                </div>
+            </div>
+        </div>
+    
+            
+            
+    <div class="stat-card" style="margin-top: 24px; background: #f0f7ff; border-color: #bfdbfe;">
+        <h3 style="font-size: 18px; margin-bottom: 8px; color: #1e40af;">推荐逻辑与方法论</h3>
+        <div style="font-size: 14px; color: #1e3a5f; line-height: 1.7;">
+            <p style="margin-bottom: 10px;">
+                <strong>趋势交易 — 机会筛选:</strong> 寻找P/E低于行业均值（63.6）且30D涨幅落后于所在行业均值的个股，判断为"低估值+弱动量"的潜在补涨机会。
+                <strong>趋势交易 — 风险预警:</strong> 30D涨幅过度拉伸、P/E显著高于行业均值、小盘股短期暴涨的组合，视为回调风险信号。
+            </p>
+            <p style="margin-bottom: 10px;">
+                <strong>均值回归 (反趋势):</strong> 回测646个周度观测，统计得出三层信号框架——
+                <span style="color: #059669; font-weight: 600;">BUY (2周累计 < -8%): 胜率79%</span>，
+                <span style="color: #d97706; font-weight: 600;">WATCH (单周 < -5%): 胜率67%</span>，
+                <span style="color: #6b7280;">确认信号 (连跌2周): 胜率64%</span>。
+                关键规则：跌幅 < -5% 无统计优势，切勿追跌。最佳行业：半导体设备(100%)、网络与互联(85-100%)。
+            </p>
+            <p style="font-size: 13px; color: #4b5563; margin-top: 8px;">
+                当前活跃: 0个买入信号, 0个关注信号。
+                趋势（机会/风险）与均值回归是两套独立框架：机会筛选买弱势滞涨股，均值回归买超跌反弹，两者互补。
+            </p>
+        </div>
+    </div>
+    
+
+            <div style="margin-top: 40px;">
+                <h3 style="font-size: 20px; margin-bottom: 16px;">三大核心视图</h3>
+
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                    <div class="stat-card view-card" onclick="showTab('cards')">
+                        <div style="font-size: 40px; margin-bottom: 12px;">🎴</div>
+                        <h4 style="font-size: 16px; margin-bottom: 8px;">行业卡片矩阵</h4>
+                        <p style="font-size: 13px; color: #94a3b8; line-height: 1.5;">
+                            按行业分组的详细卡片，展示每支股票的价格、涨跌、P/E、市值和多时间段收益率。
+                        </p>
+                    </div>
+
+                    <div class="stat-card view-card" onclick="showTab('bubble')">
+                        <div style="font-size: 40px; margin-bottom: 12px;">🫧</div>
+                        <h4 style="font-size: 16px; margin-bottom: 8px;">动量气泡图</h4>
+                        <p style="font-size: 13px; color: #94a3b8; line-height: 1.5;">
+                            X轴=3月收益，Y轴=波动率，气泡大小=市值。包含聚焦版和完整版两个视角。
+                        </p>
+                    </div>
+
+                    <div class="stat-card view-card" onclick="showTab('heatmap')">
+                        <div style="font-size: 40px; margin-bottom: 12px;">🔥</div>
+                        <h4 style="font-size: 16px; margin-bottom: 8px;">行业轮动热力图</h4>
+                        <p style="font-size: 13px; color: #94a3b8; line-height: 1.5;">
+                            Y轴=33支股票（按行业分组），X轴=周度时间，颜色=涨跌幅强度。识别资金在产业链中的流动规律。
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 40px; padding: 20px; background: #f9fafb; border-radius: 8px;">
+                <h3 style="font-size: 18px; margin-bottom: 12px;">9大行业细分</h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 13px;">
+                    <div>1️⃣ 上游材料 (1股)</div>
+                    <div>2️⃣ 半导体设备 (4股)</div>
+                    <div>3️⃣ 晶圆制造 (1股)</div>
+                    <div>4️⃣ 芯片设计 (6股)</div>
+                    <div>5️⃣ 存储 (2股)</div>
+                    <div>6️⃣ 先进封装 (1股)</div>
+                    <div>7️⃣ 网络与互联 (8股)</div>
+                    <div>8️⃣ 服务器与数据中心 (2股)</div>
+                    <div>9️⃣ 下游需求 (6股)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards Section -->
+        <div id="cards-section" class="chart-section">
+            <div class="section-header">
+                <h2 class="section-title">🎴 行业卡片矩阵</h2>
+                <p class="section-description">
+                    按行业分组展示33支股票的详细数据，包括价格、涨跌幅、P/E、市值和多时间段收益率。
+                </p>
+            </div>
+            <div class="iframe-container">
+                <iframe id="cards-iframe" data-src="dashboard_card_matrix_real.html" title="行业卡片矩阵"></iframe>
+            </div>
+        </div>
+
+        <!-- Bubble Chart Section -->
+        <div id="bubble-section" class="chart-section">
+            <div class="section-header">
+                <h2 class="section-title">🫧 动量气泡图</h2>
+                <p class="section-description">
+                    X轴=3月收益率，Y轴=波动率，气泡大小=市值。包含聚焦版和完整版两个视角。
+                </p>
+            </div>
+
+            <div class="sub-section">
+                <h3 class="sub-section-title">聚焦版 - 高动量低波动机会</h3>
+                <div class="iframe-container">
+                    <iframe id="bubble-focused-iframe" data-src="dashboard_bubble_chart_focused.html" title="动量气泡图聚焦版"></iframe>
+                </div>
+            </div>
+
+            <div class="sub-section">
+                <h3 class="sub-section-title">完整版 - 全局分布视图</h3>
+                <div class="iframe-container">
+                    <iframe id="bubble-full-iframe" data-src="dashboard_bubble_chart_real.html" title="动量气泡图完整版"></iframe>
+                </div>
+            </div>
+        </div>
+
+        <!-- Heatmap Section -->
+        <div id="heatmap-section" class="chart-section">
+            <div class="section-header">
+                <h2 class="section-title">🔥 行业轮动热力图</h2>
+                <p class="section-description">
+                    Y轴=33支股票（按行业分组），X轴=周度时间，颜色=涨跌幅强度。识别资金在产业链中的流动规律。
+                </p>
+            </div>
+            <div class="iframe-container">
+                <iframe id="heatmap-iframe" data-src="dashboard_heatmap_real.html" title="行业轮动热力图"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p><strong>AI Infrastructure Dashboard</strong></p>
+        <p>数据来源: timsun.net + Yahoo Finance | 更新时间: 2026-06-23 19:48:20</p>
+        <p>本项目仅供学习和投资参考使用，不构成投资建议</p>
+    </div>
+
+    <script>
+        const iframeFallbackHeights = {
+            'cards-iframe': 2200,
+            'bubble-focused-iframe': 760,
+            'bubble-full-iframe': 760,
+            'heatmap-iframe': 1100
+        };
+
+        function resizeIframe(iframe) {
+            const fallbackHeight = iframeFallbackHeights[iframe.id] || 800;
+
+            try {
+                const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+                const body = iframeDocument.body;
+                const html = iframeDocument.documentElement;
+                const plotBottoms = Array.from(iframeDocument.querySelectorAll('.plotly-graph-div')).map(el => {
+                    const rect = el.getBoundingClientRect();
+                    return rect.bottom + (iframe.contentWindow?.scrollY || 0);
+                });
+
+                const contentHeight = Math.max(
+                    body ? body.scrollHeight : 0,
+                    body ? body.offsetHeight : 0,
+                    html ? html.scrollHeight : 0,
+                    html ? html.offsetHeight : 0,
+                    plotBottoms.length ? Math.max(...plotBottoms) : 0
+                );
+
+                iframe.style.height = `${Math.max(fallbackHeight, Math.ceil(contentHeight) + 24)}px`;
+            } catch (error) {
+                iframe.style.height = `${fallbackHeight}px`;
+            }
+        }
+
+        function bindIframeResize(iframe) {
+            if (iframe.dataset.resizeBound === 'true') {
+                return;
+            }
+
+            iframe.dataset.resizeBound = 'true';
+            iframe.style.height = `${iframeFallbackHeights[iframe.id] || 800}px`;
+
+            iframe.addEventListener('load', () => {
+                resizeIframe(iframe);
+                window.setTimeout(() => resizeIframe(iframe), 150);
+                window.setTimeout(() => resizeIframe(iframe), 600);
+            });
+        }
+
+        function ensureIframeLoaded(iframe) {
+            bindIframeResize(iframe);
+
+            if (!iframe.src) {
+                iframe.src = iframe.getAttribute('data-src');
+                return;
+            }
+
+            resizeIframe(iframe);
+        }
+
+        function resizeVisibleIframes() {
+            document.querySelectorAll('.chart-section.active iframe[data-src]').forEach(resizeIframe);
+        }
+
+        function showTab(tabName) {
+            // Hide all sections
+            document.querySelectorAll('.chart-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Remove active class from all tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected section
+            const sectionId = tabName + '-section';
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.add('active');
+                section.querySelectorAll('iframe[data-src]').forEach(ensureIframeLoaded);
+                window.setTimeout(resizeVisibleIframes, 0);
+                window.setTimeout(resizeVisibleIframes, 200);
+            }
+
+            // Activate clicked tab
+            const tabs = document.querySelectorAll('.nav-tab');
+            const tabMap = {
+                'overview': 0,
+                'cards': 1,
+                'bubble': 2,
+                'heatmap': 3
+            };
+
+            const tabIndex = tabMap[tabName];
+            if (tabIndex !== undefined && tabs[tabIndex]) {
+                tabs[tabIndex].classList.add('active');
+            }
+        }
+
+        // Initialize - show overview by default
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('iframe[data-src]').forEach(bindIframeResize);
+            showTab('overview');
+        });
+
+        window.addEventListener('resize', resizeVisibleIframes);
+    </script>
+</body>
+</html>

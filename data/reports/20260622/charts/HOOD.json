@@ -751,7 +751,7 @@
     "volume_last_note": "最近交易日：量能约为5日均量的0.8倍（缩量），较前日下跌2.3%，归类为「缩量下跌」。",
     "price_levels": {
       "ideal_buy": 104.3,
-      "second_buy": 101.0,
+      "second_buy": 97.52,
       "stop_loss": 97.5,
       "target": 112.5
     }
