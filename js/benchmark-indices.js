@@ -580,8 +580,9 @@ function mountAiInfra() {
   const frame = $('ai-infra-frame');
   if (!frame) return;
   if (!frame.getAttribute('src')) {
-    const src = frame.getAttribute('data-src');
-    if (src) frame.setAttribute('src', src);
+    // 用无 .html 路径，对齐 Cloudflare 静态托管（避免 307 + 双 CSP 头在 iframe 内异常）
+    const src = frame.getAttribute('data-src') || '/data/ai_infra/dashboard_unified';
+    frame.setAttribute('src', src);
   }
 }
 

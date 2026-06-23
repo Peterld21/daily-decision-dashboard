@@ -12,7 +12,7 @@
  *           skipWaiting + clients.claim 让新 SW 立刻接管下一次导航。
  * ===================================================================== */
 
-const CACHE_VERSION = 'v2-20260623a';
+const CACHE_VERSION = 'v3-20260623b';
 const SHELL_CACHE = `shell-${CACHE_VERSION}`;
 const DATA_CACHE  = `data-${CACHE_VERSION}`;
 

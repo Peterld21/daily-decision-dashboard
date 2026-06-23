@@ -3,7 +3,7 @@
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self' data:; frame-src 'self'; frame-ancestors 'none'; base-uri 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.plot.ly https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data:; frame-src 'self'; frame-ancestors 'self'; base-uri 'self'
 
 /data/*
   Cache-Control: public, max-age=60, must-revalidate
@@ -25,8 +25,3 @@
 
 /icons/*
   Cache-Control: public, max-age=2592000
-
-# AI Infra：允许被本站 iframe 嵌套；子页含内联 Plotly + cdn.plot.ly（须放宽 script-src）
-/data/ai_infra/*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.plot.ly https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data:; frame-src 'self'; frame-ancestors 'self'; base-uri 'self'
-  X-Frame-Options: SAMEORIGIN
