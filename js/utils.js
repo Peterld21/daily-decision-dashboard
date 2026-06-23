@@ -48,6 +48,7 @@ export function signalClass(emoji) {
     case '🟡': return 'signal-hold';
     case '⚪': return 'signal-watch';
     case '🔴': return 'signal-sell';
+    case '🟠': return 'signal-sell';
     default:   return 'signal-watch';
   }
 }
