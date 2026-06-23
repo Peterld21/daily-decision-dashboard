@@ -1,6 +1,6 @@
 /**
  * 重要信息总览（利空 / 利好）：
- * 输入：report index.json 的 intel = { bear: {TICKER: [..]}, bull: {TICKER: [..]} }
+ * 输入：`intel_overview`（与要闻速评同源）或降级为完整 `intel`。
  */
 import { h } from './utils.js';
 

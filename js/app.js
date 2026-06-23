@@ -56,7 +56,7 @@ async function bootstrap() {
 
   renderDailyDigest(STORE.index.daily_digest);
   renderMacroHero(STORE.index.macro);
-  renderIntelDigest(STORE.index.intel);
+  renderIntelDigest(STORE.index.intel_overview || STORE.index.intel);
   renderSummaryTable(STORE.index.summary_rows);
   renderTOC(STORE.index.cards);
 

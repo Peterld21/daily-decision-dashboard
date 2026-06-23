@@ -111,6 +111,7 @@ def build_view(series, wanted_indices, labels, anchor_date, key, title, descript
         latest[label] = round(values[-1], 2)
 
     return {
+        'type': 'returns',
         'key': key,
         'labels': labels,
         'baseDate': anchor_date,
@@ -120,6 +121,68 @@ def build_view(series, wanted_indices, labels, anchor_date, key, title, descript
         'title': title,
         'description': description,
         'yAxisLabel': y_axis_label,
+    }
+
+
+def compute_drawdown_view(series, wanted_indices, labels, *, zh: bool):
+    """组装 drawdownCompare 视图：对比图(各指数相对自身峰值回撤) + 每指数「价位/回撤」双轴面板。
+
+    与 generate_benchmark_drawdown_html.py 的 compute_drawdown_payload 字段保持一致，
+    供 webapp「指数趋势」Tab 的 ECharts 直接消费（含时间窗切片所需的 labels/panels）。
+    """
+    drawdown_datasets: dict[str, list[float]] = {}
+    latest_drawdown: dict[str, float] = {}
+    panels: list[dict] = []
+
+    for idx, label in wanted_indices.items():
+        closes: list[float] = []
+        drawdowns: list[float] = []
+        running_peak = None
+        for d in labels:
+            close = round(series[idx][d], 4)
+            running_peak = close if running_peak is None else max(running_peak, close)
+            drawdown = round((close / running_peak - 1.0) * 100, 4)
+            closes.append(close)
+            drawdowns.append(drawdown)
+        drawdown_datasets[label] = drawdowns
+        latest_drawdown[label] = round(drawdowns[-1], 2)
+        panels.append({
+            'label': label,
+            'close': closes,
+            'drawdown': drawdowns,
+            'latestClose': closes[-1],
+            'latestDrawdown': round(drawdowns[-1], 2),
+        })
+
+    if zh:
+        title = '回撤对比（Drawdown Compare）'
+        description = (
+            f'回撤起算日为 <strong>{labels[0]}</strong>。上方对比图展示各指数相对其'
+            '<strong>自身历史峰值</strong>的回撤；下方五张小图分别用左轴展示指数价位、'
+            '右轴展示当日回撤幅度。'
+        )
+        y_axis_label = '相对峰值回撤（%）'
+    else:
+        title = 'Drawdown Compare'
+        description = (
+            f"Drawdown starts on <strong>{labels[0]}</strong>. The top chart compares each "
+            "index's drawdown from its own running peak. The five charts below pair each index "
+            'level on the left axis with daily drawdown on the right axis.'
+        )
+        y_axis_label = 'Drawdown from running peak (%)'
+
+    return {
+        'type': 'drawdown',
+        'key': 'drawdownCompare',
+        'labels': labels,
+        'baseDate': labels[0],
+        'points': len(labels),
+        'drawdownDatasets': drawdown_datasets,
+        'latest': latest_drawdown,
+        'title': title,
+        'description': description,
+        'yAxisLabel': y_axis_label,
+        'panels': panels,
     }
 
 
@@ -188,9 +251,13 @@ def build_dashboard_payload(
         ytd_dates, ytd_base_date,
         zh=zh, ytd_year=ytd_year,
     )
+    # 回撤对比视图（与 sinceBase 同基期、同日历）
+    views['drawdownCompare'] = compute_drawdown_view(
+        series, wanted_indices, common_dates, zh=zh,
+    )
 
     return {
-        'schemaVersion': 1,
+        'schemaVersion': 2,
         'seriesOrder': series_order,
         'colors': colors,
         'views': views,

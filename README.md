@@ -84,8 +84,21 @@ webapp/
   },
 
   "intel": {
-    "bear": { "AAPL": ["..."], "GOOG": ["..."] },
+    "bear": { "AAPL": ["…（可含技术面条目）"], "GOOG": ["..."] },
     "bull": { "AAPL": ["..."], "TSLA": ["..."] }
+  },
+
+  "intel_overview": {
+    "bear": { "AMD": ["分析师下调评级…"] },
+    "bull": { "NOW": ["ServiceNow 增长指引…"] }
+  },
+
+  "daily_digest": {
+    "news": {
+      "bull_one_liner": "…",
+      "bear_one_liner": "…",
+      "source": "intel_compact_news_overview_aligned | deepseek | …"
+    }
   },
 
   "summary_rows": [
@@ -112,7 +125,8 @@ webapp/
     }
   ]
 }
-```
+
+> 「重要信息总览」前端读 **`intel_overview`**（若无则退回 **`intel`**）；**要闻速评**只吃与 `intel_overview` 同源的快照后经去重／LLM。全量 RSI/均线条目仍可从各 **`cards[].intel_md`** 等处查看。
 
 ### 3.3 `data/reports/<YYYYMMDD>/charts/<TICKER>.json`
 

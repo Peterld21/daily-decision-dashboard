@@ -31,7 +31,9 @@
 #   ./scripts/publish.sh --date 20260505 --push
 #   ./scripts/publish.sh --skip-fundamentals --push
 #   ./scripts/publish.sh --skip-benchmark-indices --push   # 禁拉五指数 CSV（离线 / 数据源故障）
-#   ./scripts/publish.sh --no-llm-summary --push
+#   ./scripts/publish.sh --skip-ai-infra --push            # 不同步 marco_analysis 的 AI Infra 总览页
+#
+# 非交易日（周末/休市）：仍会跑 main.py（自动加 --force-run），报告日期对齐最新交易日。
 #
 # 退出码：
 #   0  全部成功；或仅"无变更" (data 未变)
@@ -120,7 +122,6 @@ DATA_ONLY=0
 SKIP_ANALYZE=0
 SKIP_TRADE_ACTION=0
 RUN_FUNDAMENTALS=1
-USE_TA_SUMMARY_LLM=1
 CHART_BARS=60
 FORCE_DATE=""
 
@@ -135,6 +136,7 @@ else
   warn "建议：cp scripts/publish.config.example.sh scripts/publish.config.sh 后编辑 STOCKS"
 fi
 RUN_BENCHMARK_INDICES="${RUN_BENCHMARK_INDICES:-1}"
+RUN_AI_INFRA="${RUN_AI_INFRA:-1}"
 
 # --- 参数解析 -----------------------------------------------------------------
 while [[ $# -gt 0 ]]; do
@@ -146,7 +148,7 @@ while [[ $# -gt 0 ]]; do
     --skip-trade-action)   SKIP_TRADE_ACTION=1; shift ;;
     --skip-fundamentals)   RUN_FUNDAMENTALS=0; shift ;;
     --skip-benchmark-indices) RUN_BENCHMARK_INDICES=0; shift ;;
-    --no-llm-summary)      USE_TA_SUMMARY_LLM=0; shift ;;
+    --skip-ai-infra)       RUN_AI_INFRA=0; shift ;;
     --date)                FORCE_DATE="${2:-}"; shift 2 ;;
     --stocks)              STOCKS="${2:-}"; shift 2 ;;
     --bars)                CHART_BARS="${2:-60}"; shift 2 ;;
@@ -186,6 +188,7 @@ if [[ $DATA_ONLY  -eq 1 ]]; then DATAONLY_STR="yes";      else DATAONLY_STR="no"
 STOCKS_STR="${STOCKS:-[skipped]}"
 
 if [[ $RUN_BENCHMARK_INDICES -eq 1 ]]; then BENCH_STR="yes"; else BENCH_STR="no"; fi
+if [[ $RUN_AI_INFRA -eq 1 ]]; then AIINFRA_STR="yes"; else AIINFRA_STR="no"; fi
 
 step "Plan"
 printf "  ${CYAN}WEBAPP_ROOT${RESET}  %s\n" "$WEBAPP_ROOT"
@@ -195,13 +198,33 @@ printf "  ${CYAN}STOCKS     ${RESET}  %s\n" "$STOCKS_STR"
 printf "  ${CYAN}PUSH       ${RESET}  %s\n" "$PUSH_STR"
 printf "  ${CYAN}DATA_ONLY  ${RESET}  %s\n" "$DATAONLY_STR"
 printf "  ${CYAN}BENCH_TAB  ${RESET}  %s  (historyofmarket + Yahoo → benchmark_indices.json)\n" "$BENCH_STR"
+printf "  ${CYAN}AI_INFRA   ${RESET}  %s  (marco_analysis html_reports → data/ai_infra)\n" "$AIINFRA_STR"
 [[ -n "$FORCE_DATE" ]] && printf "  ${CYAN}FORCE_DATE ${RESET}  %s\n" "$FORCE_DATE"
+
+# --- 交易日历：有效报告日 & 是否需 force-run -----------------------------------
+EFFECTIVE_TRADE_DATE=""
+FORCE_RUN_FLAG=0
+if [[ -n "${STOCKS:-}" ]]; then
+  CALENDAR_OUT=$("$PYTHON_BIN" -u "$DSA_DIR/scripts/publish_trading_calendar.py" --stocks "$STOCKS" 2>>"$LOG_FILE") || true
+  EFFECTIVE_TRADE_DATE=$(printf '%s\n' "$CALENDAR_OUT" | sed -n 's/^effective_date=//p')
+  FORCE_RUN_FLAG=$(printf '%s\n' "$CALENDAR_OUT" | sed -n 's/^force_run=//p')
+  [[ -n "$EFFECTIVE_TRADE_DATE" ]] && \
+    printf "  ${CYAN}AS_OF      ${RESET}  %s  (最新有效交易日)\n" "$EFFECTIVE_TRADE_DATE"
+  if [[ "${FORCE_RUN_FLAG:-0}" == "1" ]]; then
+    printf "  ${CYAN}CALENDAR   ${RESET}  今日非交易日 → main.py 将加 --force-run\n"
+  fi
+fi
 
 # === 1) 行情 API + 新闻 + LLM 主分析 ==========================================
 if [[ $SKIP_ANALYZE -eq 0 ]]; then
   step "1/4  main.py  (行情 API + 新闻 + LLM 综合分析)"
   pushd "$DSA_DIR" >/dev/null
-  run_step "main.py" "$PYTHON_BIN" -u main.py --stocks "$STOCKS" --no-notify \
+  MAIN_ARGS=(--stocks "$STOCKS" --no-notify --workers "${PUBLISH_MAX_WORKERS:-2}")
+  if [[ "${FORCE_RUN_FLAG:-0}" == "1" || "${PUBLISH_FORCE_RUN:-0}" == "1" ]]; then
+    MAIN_ARGS+=(--force-run)
+    warn "非交易日：main.py 使用 --force-run，数据截止 ${EFFECTIVE_TRADE_DATE:-最新交易日}"
+  fi
+  run_step "main.py" "$PYTHON_BIN" -u main.py "${MAIN_ARGS[@]}" \
     || { popd >/dev/null; exit 3; }
   popd >/dev/null
   ok "main.py 完成"
@@ -214,9 +237,14 @@ step "Detect report date"
 REPORTS_DIR="${DSA_DIR}/reports"
 if [[ -n "$FORCE_DATE" ]]; then
   REPORT_DATE="$FORCE_DATE"
+elif [[ -n "${EFFECTIVE_TRADE_DATE:-}" && -f "${REPORTS_DIR}/report_${EFFECTIVE_TRADE_DATE}.md" ]]; then
+  REPORT_DATE="$EFFECTIVE_TRADE_DATE"
 else
   # 兼容 bash 3.2：单行命令替换 + 无正则捕获括号
   REPORT_DATE=$(ls -1 "$REPORTS_DIR"/report_*.md 2>/dev/null | sed 's#.*/report_##; s#\.md$##' | sort -u | tail -n1)
+  if [[ -n "${EFFECTIVE_TRADE_DATE:-}" && -n "${REPORT_DATE:-}" && "$REPORT_DATE" != "$EFFECTIVE_TRADE_DATE" ]]; then
+    warn "未找到 report_${EFFECTIVE_TRADE_DATE}.md，回退为 ${REPORT_DATE}"
+  fi
 fi
 if [[ -z "${REPORT_DATE:-}" ]]; then
   err "无法定位 report_YYYYMMDD.md；--date 强制指定或先跑 main.py"
@@ -296,6 +324,19 @@ else
   warn "跳过 fetch_benchmark_data (--skip-benchmark-indices / publish.config RUN_BENCHMARK_INDICES=0)"
 fi
 
+# === 3c) 同步 marco_analysis 的 AI Infra 总览页 → webapp/data/ai_infra/ =========
+# 仅文件拷贝；marco_analysis 的数据/分析流水线 (run_dashboard_pipeline.sh) 单独运行。
+if [[ $RUN_AI_INFRA -eq 1 ]]; then
+  step "sync_ai_infra.sh  (marco_analysis html_reports → data/ai_infra)"
+  if run_step "sync_ai_infra" "${SCRIPT_DIR}/sync_ai_infra.sh"; then
+    ok "AI Infra 总览页已同步至 data/ai_infra/"
+  else
+    warn "AI Infra 同步失败；AI Infra Tab 将沿用仓库内既有 data/ai_infra/"
+  fi
+else
+  warn "跳过 sync_ai_infra (--skip-ai-infra / publish.config RUN_AI_INFRA=0)"
+fi
+
 # === 4) Markdown → JSON =======================================================
 step "4/4  report_to_json.py  (落地 webapp/data/**)"
 JSON_ARGS=(
@@ -303,7 +344,6 @@ JSON_ARGS=(
   --out "$WEBAPP_DATA"
   --bars "$CHART_BARS"
 )
-[[ $USE_TA_SUMMARY_LLM -eq 0 ]] && JSON_ARGS+=( --no-ta-summary-llm )
 pushd "$DSA_DIR" >/dev/null
 run_step "report_to_json" \
   "$PYTHON_BIN" -u scripts/report_to_json.py "${JSON_ARGS[@]}" \
