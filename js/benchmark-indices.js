@@ -43,6 +43,19 @@ function onResizeChart() {
   }
 }
 
+/** 面板从 hidden 切到可见后，ECharts 常需延迟 resize 才有正确尺寸。 */
+function scheduleChartResize() {
+  queueMicrotask(onResizeChart);
+  requestAnimationFrame(() => {
+    onResizeChart();
+    setTimeout(onResizeChart, 150);
+  });
+}
+
+function isDrawdownView(view, viewKey) {
+  return view.type === 'drawdown' || viewKey === 'drawdownCompare' || Boolean(view.drawdownDatasets);
+}
+
 function attachResizeOnce() {
   if (state.resizeBound) return;
   state.resizeBound = true;
@@ -438,7 +451,7 @@ function applyView(viewKey) {
 
   const returnsBlock = $('benchmark-returns-block');
   const drawdownBlock = $('benchmark-drawdown-block');
-  const isDrawdown = view.type === 'drawdown';
+  const isDrawdown = isDrawdownView(view, viewKey);
   returnsBlock.hidden = isDrawdown;
   drawdownBlock.hidden = !isDrawdown;
 
@@ -456,7 +469,7 @@ function applyView(viewKey) {
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
 
-  queueMicrotask(onResizeChart);
+  scheduleChartResize();
 }
 
 function bindBenchSubtabs() {
@@ -501,6 +514,7 @@ async function mountBenchmarkIndices(dataBase) {
     attachResizeOnce();
     applyView(state.currentViewKey);
     if (loadEl) loadEl.hidden = true;
+    scheduleChartResize();
     return;
   }
 
@@ -540,6 +554,7 @@ async function mountBenchmarkIndices(dataBase) {
       attachResizeOnce();
       applyView(state.currentViewKey);
       if (loadEl) loadEl.hidden = true;
+      scheduleChartResize();
     })().catch((e) => {
       if (loadEl) loadEl.hidden = true;
       if (errEl) {
@@ -604,8 +619,9 @@ export function attachPageTabs(dataBase) {
         el.setAttribute('aria-hidden', on ? 'false' : 'true');
       }
 
-      if (active === 'indices') mountBenchmarkIndices(dataBase);
-      else if (active === 'ai-infra') mountAiInfra();
+      if (active === 'indices') {
+        mountBenchmarkIndices(dataBase).then(() => scheduleChartResize());
+      } else if (active === 'ai-infra') mountAiInfra();
     });
   });
 }

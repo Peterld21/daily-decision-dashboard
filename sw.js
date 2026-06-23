@@ -12,7 +12,7 @@
  *           skipWaiting + clients.claim 让新 SW 立刻接管下一次导航。
  * ===================================================================== */
 
-const CACHE_VERSION = 'v1-20260519b';
+const CACHE_VERSION = 'v2-20260623a';
 const SHELL_CACHE = `shell-${CACHE_VERSION}`;
 const DATA_CACHE  = `data-${CACHE_VERSION}`;
 
@@ -74,13 +74,19 @@ self.addEventListener('fetch', (event) => {
   // 跨源（CDN）：不拦截
   if (url.origin !== self.location.origin) return;
 
-  // data/* → network-first
+  // data/* → network-first（JSON / ai_infra HTML 优先拉最新）
   if (url.pathname.includes('/data/')) {
     event.respondWith(networkFirst(req, DATA_CACHE));
     return;
   }
 
-  // 其他同源资源 → stale-while-revalidate
+  // js/css → network-first，避免 stale-while-revalidate 长期卡在旧版前端
+  if (url.pathname.includes('/js/') || url.pathname.includes('/css/')) {
+    event.respondWith(networkFirst(req, SHELL_CACHE));
+    return;
+  }
+
+  // 其余 shell → stale-while-revalidate
   event.respondWith(staleWhileRevalidate(req, SHELL_CACHE));
 });
 
