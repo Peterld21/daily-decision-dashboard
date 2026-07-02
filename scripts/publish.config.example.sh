@@ -44,11 +44,18 @@ RUN_AI_INFRA=1
 
 # git push → GitHub 网络不稳时可选（publish.sh 已实现默认 HTTP/1.1 + 重试）
 # GIT_HTTP_VERSION=HTTP/1.1
-# GIT_PUSH_MAX_ATTEMPTS=5
-# GIT_PUSH_RETRY_DELAY_SEC=20
+# GIT_PUSH_MAX_ATTEMPTS=8
+# GIT_PUSH_RETRY_DELAY_SEC=30
+# GIT_PUSH_POST_BUFFER=524288000
 
-# main.py 并发（默认 2，低于 daily_stock_analysis/.env 的 MAX_WORKERS 时以此为准）
-# PUBLISH_MAX_WORKERS=2
+# main.py 并发（默认 2；大陆网络 / yfinance 易 429 时建议 1）
+PUBLISH_MAX_WORKERS=1
+
+# 基本面拉取（fetch_watchlist_fundamentals_xueqiu.py 读 daily_stock_analysis/.env）
+# 已配置 XUEQIU_XQ_A_TOKEN 时建议在 .env 设 FUNDAMENTALS_SKIP_YFINANCE=1（全走雪球，~1min）
+# FUNDAMENTALS_SKIP_YFINANCE=1
+# FUNDAMENTALS_PREFER_XUEQIU=1
+# FUNDAMENTALS_XQ_INTER_TICKER_SLEEP=0.45
 
 # 非交易日仍跑 main.py：默认自动 --force-run；设为 1 则无论是否交易日都 force-run
 # PUBLISH_FORCE_RUN=0

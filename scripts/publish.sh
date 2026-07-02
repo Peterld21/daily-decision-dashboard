@@ -93,15 +93,18 @@ git_push_with_retries() {
   local a=1 rc=0
   local max_attempts="${GIT_PUSH_MAX_ATTEMPTS:-5}"
   local delay_sec="${GIT_PUSH_RETRY_DELAY_SEC:-20}"
+  local post_buffer="${GIT_PUSH_POST_BUFFER:-524288000}"
+  local -a git_push_args=(-c "http.postBuffer=${post_buffer}" -c http.lowSpeedLimit=0 -c http.lowSpeedTime=999999)
   if [[ -n "${GIT_HTTP_VERSION+x}" && -z "${GIT_HTTP_VERSION}" ]]; then
     :
   else
     export GIT_HTTP_VERSION="${GIT_HTTP_VERSION:-HTTP/1.1}"
+    git_push_args+=(-c "http.version=${GIT_HTTP_VERSION}")
   fi
   while [[ $a -le $max_attempts ]]; do
-    log "git push（第 ${a}/${max_attempts} 次） GIT_HTTP_VERSION=${GIT_HTTP_VERSION:-<默认>}"
+    log "git push（第 ${a}/${max_attempts} 次） GIT_HTTP_VERSION=${GIT_HTTP_VERSION:-<默认>} postBuffer=${post_buffer}"
     set +e
-    git push
+    git "${git_push_args[@]}" push
     rc=$?
     set -e
     if [[ $rc -eq 0 ]]; then
@@ -135,6 +138,23 @@ else
   warn "未找到 ${CONFIG}；将使用默认值"
   warn "建议：cp scripts/publish.config.example.sh scripts/publish.config.sh 后编辑 STOCKS"
 fi
+
+# 从 daily_stock_analysis/.env 桥接雪球 token / 基本面策略（仅本进程，不打印明文）
+bridge_dsa_env() {
+  local env_file="${DSA_DIR:-${WEBAPP_ROOT%/webapp}/daily_stock_analysis}/.env"
+  [[ -f "$env_file" ]] || return 0
+  local k v
+  for k in XUEQIU_XQ_A_TOKEN XQ_A_TOKEN FUNDAMENTALS_SKIP_YFINANCE \
+           FUNDAMENTALS_PREFER_XUEQIU FUNDAMENTALS_XQ_INTER_TICKER_SLEEP \
+           FUNDAMENTALS_YF_HTTP_BLOCK_FAST_FAIL; do
+    eval "v=\${$k:-}"
+    if [[ -z "$v" ]]; then
+      v="$(grep -aoE "${k}=[^[:space:]\"']+" "$env_file" 2>/dev/null | head -1 | sed -E "s/^${k}=//" || true)"
+      [[ -n "$v" ]] && export "$k=$v"
+    fi
+  done
+  return 0
+}
 RUN_BENCHMARK_INDICES="${RUN_BENCHMARK_INDICES:-1}"
 RUN_AI_INFRA="${RUN_AI_INFRA:-1}"
 
@@ -215,6 +235,8 @@ if [[ -n "${STOCKS:-}" ]]; then
   fi
 fi
 
+bridge_dsa_env
+
 # === 1) 行情 API + 新闻 + LLM 主分析 ==========================================
 if [[ $SKIP_ANALYZE -eq 0 ]]; then
   step "1/4  main.py  (行情 API + 新闻 + LLM 综合分析)"
@@ -288,6 +310,16 @@ fi
 FUND_CSV="${REPORTS_DIR}/watchlist_fundamentals_${REPORT_DATE}.csv"
 if [[ $RUN_FUNDAMENTALS -eq 1 ]]; then
   step "3/4  fetch_watchlist_fundamentals_xueqiu.py  (市值 / Forward PE)"
+  bridge_dsa_env
+  if [[ -n "${XUEQIU_XQ_A_TOKEN:-${XQ_A_TOKEN:-}}" ]]; then
+    if [[ "${FUNDAMENTALS_SKIP_YFINANCE:-0}" == "1" ]]; then
+      log "基本面: 雪球 token 已配置，FUNDAMENTALS_SKIP_YFINANCE=1（跳过 yfinance）"
+    else
+      log "基本面: 雪球 token 已配置，优先雪球（可在 DSA .env 设 FUNDAMENTALS_SKIP_YFINANCE=1 进一步加速）"
+    fi
+  else
+    warn "未检测到 XUEQIU_XQ_A_TOKEN；基本面将仅 yfinance（易 429/403，耗时长）"
+  fi
   pushd "$DSA_DIR" >/dev/null
   if run_step "fetch_watchlist_fundamentals_xueqiu" \
        "$PYTHON_BIN" -u scripts/fetch_watchlist_fundamentals_xueqiu.py \
