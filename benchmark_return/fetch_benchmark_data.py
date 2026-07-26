@@ -60,19 +60,22 @@ def fetch_historyofmarket_series(url, series_key, date_key, value_key, start_dat
     return sorted(rows, key=lambda x: x[0])
 
 
-def fetch_smh_yahoo_chart(start_date='2020-01-01'):
+def fetch_yahoo_chart(symbol, start_date='2020-01-01'):
     """
-    Fetch SMH price data from Yahoo Finance chart API.
+    Fetch daily close data for a symbol from Yahoo Finance chart API.
 
     Args:
+        symbol: Yahoo symbol, e.g. 'SMH' or '^IXIC'
         start_date: Start date in YYYY-MM-DD format
 
     Returns:
         List of (date, value) tuples sorted by date
     """
+    from urllib.parse import quote
+
     start_ts = int(datetime.strptime(start_date, '%Y-%m-%d').timestamp())
     url = (
-        'https://query1.finance.yahoo.com/v8/finance/chart/SMH'
+        f'https://query1.finance.yahoo.com/v8/finance/chart/{quote(symbol)}'
         f'?period1={start_ts}&period2=9999999999&interval=1d&includeAdjustedClose=false'
     )
     req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -81,7 +84,7 @@ def fetch_smh_yahoo_chart(start_date='2020-01-01'):
 
     result = obj.get('chart', {}).get('result', [])
     if not result:
-        raise RuntimeError('Failed to fetch SMH from Yahoo Finance chart API')
+        raise RuntimeError(f'Failed to fetch {symbol} from Yahoo Finance chart API')
 
     payload = result[0]
     timestamps = payload.get('timestamp', [])
@@ -97,7 +100,7 @@ def fetch_smh_yahoo_chart(start_date='2020-01-01'):
             rows.append((date, float(val)))
 
     if not rows:
-        raise RuntimeError('SMH chart API returned no usable rows')
+        raise RuntimeError(f'{symbol} chart API returned no usable rows')
 
     return rows
 
@@ -134,13 +137,8 @@ def main():
             'value_key': 'close',
             'source_label': 'historyofmarket',
         },
-        'nasdaq': {
-            'url': 'https://historyofmarket.com/api/nasdaq/composite.json',
-            'series_key': 'series',
-            'date_key': 'date',
-            'value_key': 'value',
-            'source_label': 'historyofmarket',
-        },
+        # nasdaq 原用 historyofmarket.com/api/nasdaq/composite.json，
+        # 该接口 2026-07-10 起停更，已改为 Yahoo chart API（^IXIC），见下方
         'xlk': {
             'url': 'https://historyofmarket.com/api/xlk/price.json',
             'series_key': 'series',
@@ -174,14 +172,15 @@ def main():
         }
         print(f"    → {len(rows)} data points")
 
-    # Fetch SMH from Yahoo Finance chart API
-    print("  Fetching SMH from Yahoo Finance chart API...")
-    smh_rows = fetch_smh_yahoo_chart(args.start_date)
-    series_map['smh'] = {
-        'rows': smh_rows,
-        'source': 'yahoo_chart',
-    }
-    print(f"    → {len(smh_rows)} data points")
+    # Fetch NASDAQ Composite (^IXIC) and SMH from Yahoo Finance chart API
+    for name, symbol in [('nasdaq', '^IXIC'), ('smh', 'SMH')]:
+        print(f"  Fetching {name.upper()} ({symbol}) from Yahoo Finance chart API...")
+        rows = fetch_yahoo_chart(symbol, args.start_date)
+        series_map[name] = {
+            'rows': rows,
+            'source': 'yahoo_chart',
+        }
+        print(f"    → {len(rows)} data points")
 
     # Write unified CSV
     print(f"\nWriting CSV to {output_path} ...")
