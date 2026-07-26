@@ -750,10 +750,10 @@
     ],
     "volume_last_note": "最近交易日：量能约为5日均量的1.0倍（中性），较前日下跌7.0%。",
     "price_levels": {
-      "ideal_buy": null,
-      "second_buy": null,
-      "stop_loss": null,
-      "target": null
+      "ideal_buy": 941.38,
+      "second_buy": 975.76,
+      "stop_loss": 904.0,
+      "target": 967.14
     }
   },
   "benchmark": {

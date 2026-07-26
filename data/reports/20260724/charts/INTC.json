@@ -752,7 +752,7 @@
     "price_levels": {
       "ideal_buy": null,
       "second_buy": null,
-      "stop_loss": null,
+      "stop_loss": 92.0,
       "target": null
     }
   },

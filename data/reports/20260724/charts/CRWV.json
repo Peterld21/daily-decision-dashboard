@@ -752,8 +752,8 @@
     "price_levels": {
       "ideal_buy": null,
       "second_buy": null,
-      "stop_loss": null,
-      "target": null
+      "stop_loss": 77.5,
+      "target": 65.0
     }
   },
   "benchmark": {
