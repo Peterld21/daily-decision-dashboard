@@ -31,3 +31,10 @@ dist/
 
 # Local publish config (含 STOCKS 等用户私有偏好)
 scripts/publish.config.sh
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
