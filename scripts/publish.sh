@@ -70,6 +70,8 @@ LOG_FILE="${LOG_DIR}/publish_$(date +%Y%m%d_%H%M%S).log"
 # Python 输出不要被块缓冲（关键：这样你能实时看到进度）
 export PYTHONUNBUFFERED=1
 export PYTHONIOENCODING=UTF-8
+# 避免调用方继承 LITELLM_LOG=DEBUG 后把完整 Prompt 写入超大日志。
+export LITELLM_LOG="${PUBLISH_LITELLM_LOG:-WARNING}"
 PIPELINE_STARTED=$SECONDS
 
 # 子步骤执行包装：
