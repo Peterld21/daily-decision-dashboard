@@ -12,7 +12,7 @@
  *           skipWaiting + clients.claim 让新 SW 立刻接管下一次导航。
  * ===================================================================== */
 
-const CACHE_VERSION = 'v3-20260623b';
+const CACHE_VERSION = 'v4-20260906a';
 const SHELL_CACHE = `shell-${CACHE_VERSION}`;
 const DATA_CACHE  = `data-${CACHE_VERSION}`;
 
@@ -23,6 +23,7 @@ const SHELL_FILES = [
   'css/main.css',
   'js/utils.js',
   'js/app.js',
+  'js/weekly-strategy.js',
   'js/pwa.js',
   'js/benchmark-indices.js',
   'js/chart-helpers.js',

@@ -25,6 +25,7 @@
 #   ./scripts/daily_refresh.sh                 # 全量 dry-run（不 push）
 #   ./scripts/daily_refresh.sh --push          # 全量并推送到 GitHub
 #   ./scripts/daily_refresh.sh --skip-marco --push      # 跳过 AI Infra 重算，仅同步既有 html
+#   ./scripts/daily_refresh.sh --force-marco --push     # 即使今日已有完整产物也强制重算
 #   ./scripts/daily_refresh.sh --marco-only             # 只刷 AI Infra 数据，不发布
 #   ./scripts/daily_refresh.sh --data-only --push       # 跳过本地分析，只重转 JSON 并推送
 #
@@ -40,6 +41,7 @@
 # 退出码：0 成功；2 配置错误；3 marco 流水线失败（未加 --keep-going 时）；其余沿用 publish.sh。
 # ============================================================================
 set -euo pipefail
+DAILY_STARTED=$SECONDS
 
 if [[ -t 1 ]]; then
   BOLD=$'\033[1m'; DIM=$'\033[2m'; RED=$'\033[31m'; GREEN=$'\033[32m'
@@ -67,6 +69,7 @@ fi
 # --- 默认值 / 路径 ------------------------------------------------------------
 RUN_MARCO="${RUN_MARCO:-1}"      # 是否重跑 marco 的 AI Infra 数据流水线
 MARCO_ONLY=0
+FORCE_MARCO=0
 KEEP_GOING=0                     # marco 失败时是否仍继续 publish
 # marco_analysis 默认与 webapp 同级（…/webapp_dev/marco_analysis）
 MARCO_DIR="${MARCO_DIR:-${WEBAPP_ROOT%/webapp}/marco_analysis}"
@@ -93,12 +96,27 @@ PASSTHRU=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --skip-marco)   RUN_MARCO=0; shift ;;
+    --force-marco)  FORCE_MARCO=1; RUN_MARCO=1; shift ;;
     --marco-only)   MARCO_ONLY=1; shift ;;
     --keep-going)   KEEP_GOING=1; shift ;;
     -h|--help)      sed -n '2,55p' "$0"; exit 0 ;;
     *)              PASSTHRU+=("$1"); shift ;;
   esac
 done
+
+# 当天完整 AI Infra 已存在时直接复用。该检查只看本地产物，不触发请求。
+if [[ $RUN_MARCO -eq 1 && $FORCE_MARCO -eq 0 \
+      && "${MARCO_REUSE_SAME_DAY:-1}" == "1" ]]; then
+  MARCO_UNIFIED="${MARCO_DIR}/html_reports/dashboard_unified.html"
+  MARCO_ANALYSIS="${MARCO_DIR}/html_reports/stock_analysis_$(date +%Y-%m-%d).md"
+  if [[ -s "$MARCO_UNIFIED" && -s "$MARCO_ANALYSIS" ]]; then
+    if [[ "$(date -r "$MARCO_UNIFIED" +%Y-%m-%d 2>/dev/null || true)" == "$(date +%Y-%m-%d)" ]]; then
+      RUN_MARCO=0
+      ok "复用今日已完成的 AI Infra：$MARCO_UNIFIED"
+      log "如需强制重跑：加 --force-marco"
+    fi
+  fi
+fi
 
 step "Plan"
 printf "  ${CYAN}WEBAPP_ROOT${RESET}  %s\n" "$WEBAPP_ROOT"
@@ -149,4 +167,5 @@ fi
 # === ② 个股 + 指数 + 同步 + JSON + git（publish.sh） ==========================
 step "2/2  publish.sh  (个股/指数/同步 AI Infra/落地 JSON/git)"
 # bash 3.2：空数组需用 ${arr[@]+...} 安全展开，否则 set -u 会报 unbound。
-exec "${SCRIPT_DIR}/publish.sh" ${PASSTHRU[@]+"${PASSTHRU[@]}"}
+"${SCRIPT_DIR}/publish.sh" ${PASSTHRU[@]+"${PASSTHRU[@]}"}
+ok "daily_refresh 全链路完成 (elapsed=$((SECONDS - DAILY_STARTED))s)"

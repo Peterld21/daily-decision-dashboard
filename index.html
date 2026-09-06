@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>决策仪表盘</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-  <link rel="stylesheet" href="css/main.css?v=20260623b" />
+  <link rel="stylesheet" href="css/main.css?v=20260906a" />
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest" />
@@ -62,6 +62,7 @@
     </div>
 
     <div id="panel-stocks" class="dashboard-panel stocks-panel" role="tabpanel" aria-labelledby="tab-stock-panel">
+    <section id="weekly-strategy-panel" class="weekly-strategy" hidden aria-live="polite"></section>
     <section id="daily-digest-panel" class="daily-digest" hidden aria-live="polite"></section>
     <!-- 顶部：宏观图 + 信息总览（两栏） -->
     <section class="intro">
@@ -230,7 +231,7 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js?v=20260623b"></script>
+  <script type="module" src="js/app.js?v=20260906a"></script>
   <script type="module" src="js/pwa.js?v=20260623b"></script>
 </body>
 </html>

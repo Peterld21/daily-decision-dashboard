@@ -28,9 +28,11 @@
 #   ./scripts/publish.sh                # dry-run，落地 JSON 但不 push
 #   ./scripts/publish.sh --push         # 真的 push 到 GitHub
 #   ./scripts/publish.sh --data-only    # 跳过本地分析、只重转 JSON 并 push
+#   ./scripts/publish.sh --force-analyze # 忽略同交易日完整报告，强制重跑新闻/LLM
 #   ./scripts/publish.sh --date 20260505 --push
 #   ./scripts/publish.sh --skip-fundamentals --push
 #   ./scripts/publish.sh --skip-benchmark-indices --push   # 禁拉五指数 CSV（离线 / 数据源故障）
+#   ./scripts/publish.sh --force-benchmark-indices --push  # 强制重拉五指数
 #   ./scripts/publish.sh --skip-ai-infra --push            # 不同步 marco_analysis 的 AI Infra 总览页
 #
 # 非交易日（周末/休市）：仍会跑 main.py（自动加 --force-run），报告日期对齐最新交易日。
@@ -68,6 +70,7 @@ LOG_FILE="${LOG_DIR}/publish_$(date +%Y%m%d_%H%M%S).log"
 # Python 输出不要被块缓冲（关键：这样你能实时看到进度）
 export PYTHONUNBUFFERED=1
 export PYTHONIOENCODING=UTF-8
+PIPELINE_STARTED=$SECONDS
 
 # 子步骤执行包装：
 #   - 实时把 stdout/stderr 同步到屏幕 & 日志
@@ -75,15 +78,17 @@ export PYTHONIOENCODING=UTF-8
 #   - 描述行打到屏幕
 run_step() {
   local label="$1"; shift
+  local started=$SECONDS
   printf "${DIM}[%s]${RESET} ${CYAN}\$${RESET} %s\n" "$(ts)" "$*" | tee -a "$LOG_FILE" >&2
   set +e
   "$@" 2>&1 | tee -a "$LOG_FILE"
   local rc=${PIPESTATUS[0]}
   set -e
   if [[ $rc -ne 0 ]]; then
-    err "$label 失败 (exit=$rc)，详见 $LOG_FILE"
+    err "$label 失败 (exit=$rc, elapsed=$((SECONDS - started))s)，详见 $LOG_FILE"
     return $rc
   fi
+  ok "$label 完成 (elapsed=$((SECONDS - started))s)"
   return 0
 }
 
@@ -124,6 +129,8 @@ PUSH=0
 DATA_ONLY=0
 SKIP_ANALYZE=0
 SKIP_TRADE_ACTION=0
+FORCE_ANALYZE=0
+FORCE_BENCHMARK_INDICES=0
 RUN_FUNDAMENTALS=1
 CHART_BARS=60
 FORCE_DATE=""
@@ -165,9 +172,11 @@ while [[ $# -gt 0 ]]; do
     --no-push)             PUSH=0; shift ;;
     --data-only)           DATA_ONLY=1; SKIP_ANALYZE=1; SKIP_TRADE_ACTION=1; RUN_FUNDAMENTALS=0; shift ;;
     --skip-analyze)        SKIP_ANALYZE=1; shift ;;
+    --force-analyze)       FORCE_ANALYZE=1; shift ;;
     --skip-trade-action)   SKIP_TRADE_ACTION=1; shift ;;
     --skip-fundamentals)   RUN_FUNDAMENTALS=0; shift ;;
     --skip-benchmark-indices) RUN_BENCHMARK_INDICES=0; shift ;;
+    --force-benchmark-indices) FORCE_BENCHMARK_INDICES=1; shift ;;
     --skip-ai-infra)       RUN_AI_INFRA=0; shift ;;
     --date)                FORCE_DATE="${2:-}"; shift 2 ;;
     --stocks)              STOCKS="${2:-}"; shift 2 ;;
@@ -225,9 +234,20 @@ printf "  ${CYAN}AI_INFRA   ${RESET}  %s  (marco_analysis html_reports → data/
 EFFECTIVE_TRADE_DATE=""
 FORCE_RUN_FLAG=0
 if [[ -n "${STOCKS:-}" ]]; then
-  CALENDAR_OUT=$("$PYTHON_BIN" -u "$DSA_DIR/scripts/publish_trading_calendar.py" --stocks "$STOCKS" 2>>"$LOG_FILE") || true
+  set +e
+  CALENDAR_OUT=$("$PYTHON_BIN" -u "$DSA_DIR/scripts/publish_trading_calendar.py" --stocks "$STOCKS" 2>>"$LOG_FILE")
+  CALENDAR_RC=$?
+  set -e
+  if [[ $CALENDAR_RC -ne 0 ]]; then
+    err "交易日历解析失败 (exit=$CALENDAR_RC)，拒绝回退到可能错误的报告日期；详见 $LOG_FILE"
+    exit 2
+  fi
   EFFECTIVE_TRADE_DATE=$(printf '%s\n' "$CALENDAR_OUT" | sed -n 's/^effective_date=//p')
   FORCE_RUN_FLAG=$(printf '%s\n' "$CALENDAR_OUT" | sed -n 's/^force_run=//p')
+  if [[ -z "$EFFECTIVE_TRADE_DATE" ]]; then
+    err "交易日历未返回 effective_date，拒绝继续发布；详见 $LOG_FILE"
+    exit 2
+  fi
   [[ -n "$EFFECTIVE_TRADE_DATE" ]] && \
     printf "  ${CYAN}AS_OF      ${RESET}  %s  (最新有效交易日)\n" "$EFFECTIVE_TRADE_DATE"
   if [[ "${FORCE_RUN_FLAG:-0}" == "1" ]]; then
@@ -236,6 +256,36 @@ if [[ -n "${STOCKS:-}" ]]; then
 fi
 
 bridge_dsa_env
+
+# 同一交易日完整产物复用：避免重复执行 27 票 × 新闻搜索 × LLM。
+# 每只配置股票都必须出现在报告二级标题中，否则视为不完整并重跑。
+REUSED_COMPLETE_REPORT=0
+report_is_complete() {
+  local report_path="$1"
+  [[ -s "$report_path" ]] || return 1
+  local ticker
+  local old_ifs="$IFS"
+  IFS=','
+  for ticker in ${STOCKS:-}; do
+    ticker="$(printf '%s' "$ticker" | tr -d '[:space:]')"
+    [[ -n "$ticker" ]] || continue
+    grep -Eq "^## .*\\(${ticker}\\)" "$report_path" || { IFS="$old_ifs"; return 1; }
+  done
+  IFS="$old_ifs"
+  return 0
+}
+
+if [[ $SKIP_ANALYZE -eq 0 && $FORCE_ANALYZE -eq 0 \
+      && "${PUBLISH_REUSE_COMPLETE_REPORT:-1}" == "1" \
+      && -n "${EFFECTIVE_TRADE_DATE:-}" ]]; then
+  CACHED_REPORT="${DSA_DIR}/reports/report_${EFFECTIVE_TRADE_DATE}.md"
+  if report_is_complete "$CACHED_REPORT"; then
+    SKIP_ANALYZE=1
+    REUSED_COMPLETE_REPORT=1
+    ok "复用同交易日完整报告：$CACHED_REPORT"
+    log "如需强制刷新新闻/LLM：加 --force-analyze"
+  fi
+fi
 
 # === 1) 行情 API + 新闻 + LLM 主分析 ==========================================
 if [[ $SKIP_ANALYZE -eq 0 ]]; then
@@ -293,6 +343,10 @@ fi
 
 # === 2) 交易动作（规则 + LLM 总结） ===========================================
 TA_MD="${REPORTS_DIR}/trade_action_${REPORT_DATE}.md"
+if [[ $REUSED_COMPLETE_REPORT -eq 1 && -s "$TA_MD" ]]; then
+  SKIP_TRADE_ACTION=1
+  ok "复用同交易日交易动作：$TA_MD"
+fi
 if [[ $SKIP_TRADE_ACTION -eq 0 ]]; then
   step "2/4  generate_trade_action_report.py  (规则引擎 + DeepSeek 总结)"
   pushd "$DSA_DIR" >/dev/null
@@ -308,6 +362,10 @@ fi
 
 # === 3) 基本面 CSV（默认有 token 时优先雪球，省 yfinance 耗时；见脚本文档）=======
 FUND_CSV="${REPORTS_DIR}/watchlist_fundamentals_${REPORT_DATE}.csv"
+if [[ $REUSED_COMPLETE_REPORT -eq 1 && -s "$FUND_CSV" ]]; then
+  RUN_FUNDAMENTALS=0
+  ok "复用同交易日基本面：$FUND_CSV"
+fi
 if [[ $RUN_FUNDAMENTALS -eq 1 ]]; then
   step "3/4  fetch_watchlist_fundamentals_xueqiu.py  (市值 / Forward PE)"
   bridge_dsa_env
@@ -335,6 +393,25 @@ fi
 
 # === 3b) 五指数 CSV → 仪表盘「指数趋势」JSON（本机流水线拉取；访客浏览器只读静态 JSON）
 BENCH_DIR="${WEBAPP_ROOT}/benchmark_return"
+BENCH_CSV="${BENCH_DIR}/market_prices_post2020_publish.csv"
+if [[ $RUN_BENCHMARK_INDICES -eq 1 && $FORCE_BENCHMARK_INDICES -eq 0 \
+      && "${PUBLISH_REUSE_FRESH_BENCHMARK:-1}" == "1" \
+      && -n "${EFFECTIVE_TRADE_DATE:-}" && -s "$BENCH_CSV" ]]; then
+  BENCH_DATE="${EFFECTIVE_TRADE_DATE}"
+  if [[ "$BENCH_DATE" =~ ^[0-9]{8}$ ]]; then
+    BENCH_DATE="${BENCH_DATE:0:4}-${BENCH_DATE:4:2}-${BENCH_DATE:6:2}"
+  fi
+  if awk -F, -v d="$BENCH_DATE" '
+    NR > 1 && $1 >= d { seen[$2] = 1 }
+    END {
+      exit !(seen["sp500"] && seen["nasdaq"] && seen["smh"] && seen["xlk"] && seen["xlf"])
+    }
+  ' "$BENCH_CSV"; then
+    RUN_BENCHMARK_INDICES=0
+    ok "复用已覆盖 ${BENCH_DATE} 的五指数 CSV/JSON"
+    log "如需强制刷新指数：加 --force-benchmark-indices"
+  fi
+fi
 if [[ $RUN_BENCHMARK_INDICES -eq 1 ]]; then
   step "fetch_benchmark_data + generate_benchmark_html  (benchmark_indices.json)"
   if run_step "fetch_benchmark_data" \
@@ -370,18 +447,43 @@ else
 fi
 
 # === 4) Markdown → JSON =======================================================
-step "4/4  report_to_json.py  (落地 webapp/data/**)"
-JSON_ARGS=(
-  "$REPORT_MD"
-  --out "$WEBAPP_DATA"
-  --bars "$CHART_BARS"
+EXISTING_INDEX="${WEBAPP_DATA}/reports/${REPORT_DATE}/index.json"
+if [[ $REUSED_COMPLETE_REPORT -eq 1 && -s "$EXISTING_INDEX" \
+      && "$(grep -c '"weekly_strategy"' "$EXISTING_INDEX" || true)" -gt 0 ]]; then
+  ok "复用同交易日完整 JSON：$EXISTING_INDEX"
+else
+  step "4/4  report_to_json.py  (落地 webapp/data/**)"
+  JSON_ARGS=(
+    "$REPORT_MD"
+    --out "$WEBAPP_DATA"
+    --bars "$CHART_BARS"
+  )
+  if [[ $REUSED_COMPLETE_REPORT -eq 1 ]]; then
+    JSON_ARGS+=(--reuse-existing-extras)
+    log "同日报告重转：复用现有 macro/daily_digest，避免重复 API/LLM"
+  fi
+  pushd "$DSA_DIR" >/dev/null
+  run_step "report_to_json" \
+    "$PYTHON_BIN" -u scripts/report_to_json.py "${JSON_ARGS[@]}" \
+    || { popd >/dev/null; exit 3; }
+  popd >/dev/null
+  ok "JSON 已落地：$WEBAPP_DATA"
+fi
+
+# --- 发布质量闸门：完全离线，阻止不完整/全同建议/新闻大面积缺失的数据上线 -------
+step "Quality gate"
+QUALITY_ARGS=(
+  --data-dir "$WEBAPP_DATA"
+  --report-date "$REPORT_DATE"
+  --stocks "${STOCKS:-}"
 )
-pushd "$DSA_DIR" >/dev/null
-run_step "report_to_json" \
-  "$PYTHON_BIN" -u scripts/report_to_json.py "${JSON_ARGS[@]}" \
-  || { popd >/dev/null; exit 3; }
-popd >/dev/null
-ok "JSON 已落地：$WEBAPP_DATA"
+if [[ -z "$FORCE_DATE" && -n "${EFFECTIVE_TRADE_DATE:-}" ]]; then
+  QUALITY_ARGS+=(--expected-date "$EFFECTIVE_TRADE_DATE")
+fi
+run_step "validate_publish_output" \
+  "$PYTHON_BIN" -u "${SCRIPT_DIR}/validate_publish_output.py" \
+  "${QUALITY_ARGS[@]}" \
+  || exit 3
 
 # --- 输出体检 ----------------------------------------------------------------
 step "Snapshot of webapp/data/"
@@ -426,4 +528,5 @@ else
   ok "data/ 无变化，无需 commit"
 fi
 
-printf "\n${GREEN}${BOLD}publish.sh done.${RESET}  log → %s\n" "$LOG_FILE"
+printf "\n${GREEN}${BOLD}publish.sh done.${RESET}  elapsed=%ss  log → %s\n" \
+  "$((SECONDS - PIPELINE_STARTED))" "$LOG_FILE"

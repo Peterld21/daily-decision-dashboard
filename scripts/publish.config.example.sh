@@ -48,8 +48,17 @@ RUN_AI_INFRA=1
 # GIT_PUSH_RETRY_DELAY_SEC=30
 # GIT_PUSH_POST_BUFFER=524288000
 
-# main.py 并发（默认 2；大陆网络 / yfinance 易 429 时建议 1）
-PUBLISH_MAX_WORKERS=1
+# main.py 并发（默认 2；关闭 v4 思维链后通常可把全量分析压到 1 小时内）
+PUBLISH_MAX_WORKERS=2
+
+# 同一有效交易日已有完整报告时复用；传 --force-analyze 可强制重跑
+PUBLISH_REUSE_COMPLETE_REPORT=1
+
+# 指数 CSV 已覆盖有效交易日时复用；传 --force-benchmark-indices 可强制重拉
+PUBLISH_REUSE_FRESH_BENCHMARK=1
+
+# daily_refresh：当天已有 AI Infra 完整输出时复用；传 --force-marco 可强制重跑
+MARCO_REUSE_SAME_DAY=1
 
 # 基本面拉取（fetch_watchlist_fundamentals_xueqiu.py 读 daily_stock_analysis/.env）
 # 已配置 XUEQIU_XQ_A_TOKEN 时建议在 .env 设 FUNDAMENTALS_SKIP_YFINANCE=1（全走雪球，~1min）

@@ -16,7 +16,7 @@
 #   ./scripts/sync_ai_infra.sh                 # 用默认源目录
 #   AI_INFRA_SRC_DIR=/path/html_reports ./scripts/sync_ai_infra.sh
 #
-# 退出码：0 同步成功 / 源缺失但容忍（warn）；2 目标不可写
+# 退出码：0 同步成功；1 源目录或必要文件缺失；2 目标不可写
 # 兼容 macOS bash 3.2。
 # ============================================================================
 set -euo pipefail
@@ -48,8 +48,8 @@ echo "  SRC  $AI_INFRA_SRC_DIR"
 echo "  DEST $DEST_DIR"
 
 if [[ ! -d "$AI_INFRA_SRC_DIR" ]]; then
-  echo "  ! 源目录不存在，跳过同步（保留已有 data/ai_infra/）" >&2
-  exit 0
+  echo "  ✗ 源目录不存在，保留已有 data/ai_infra/：$AI_INFRA_SRC_DIR" >&2
+  exit 1
 fi
 
 mkdir -p "$DEST_DIR" || { echo "  ✗ 无法创建 $DEST_DIR" >&2; exit 2; }
@@ -67,4 +67,8 @@ for f in "${FILES[@]}"; do
 done
 
 echo "  ✓ 已同步 ${copied} 个文件（缺失 ${missing}）"
+if [[ $missing -gt 0 ]]; then
+  echo "  ✗ AI Infra 同步不完整：${missing}/${#FILES[@]} 个必要文件缺失" >&2
+  exit 1
+fi
 exit 0
